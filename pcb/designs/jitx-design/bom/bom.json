@@ -1,0 +1,193 @@
+{
+	"proj-name":	"jitx-design",
+	"headers":	[{
+			"field":	"status",
+			"name":	"Status",
+			"width":	10
+		}, {
+			"field":	"_quantity",
+			"name":	"Qty",
+			"width":	5
+		}, {
+			"field":	"insts",
+			"name":	"References",
+			"width":	10
+		}, {
+			"field":	"mpn",
+			"name":	"MPN",
+			"width":	10
+		}, {
+			"field":	"manufacturer",
+			"name":	"Manufacturer",
+			"width":	10
+		}, {
+			"field":	"description",
+			"name":	"Description",
+			"width":	20
+		}, {
+			"field":	"vendor",
+			"name":	"Supplier",
+			"width":	10
+		}, {
+			"field":	"sku",
+			"name":	"SKU",
+			"width":	10
+		}, {
+			"field":	"datasheet",
+			"name":	"Datasheet",
+			"width":	10
+		}, {
+			"field":	"_preferred",
+			"name":	"Preferred",
+			"width":	5
+		}],
+	"new_bom":	{
+		"rows":	[{
+				"status":	{
+					"code":	1,
+					"name":	"Auto Selected"
+				},
+				"description":	"62.5mW Thick Film Resistors 50V ±100ppm/℃ ±1% 10kΩ 0402 Chip Resistor - Surface Mount ROHS",
+				"insts":	[{
+						"inst":	{
+							"name":	"element"
+						},
+						"ref":	"R1",
+						"fileinfo":	null
+					}],
+				"datasheet":	"https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2201271430_YAGEO-RC0402FR-1310KL_C1858459.pdf",
+				"manufacturer":	"YAGEO",
+				"mpn":	"RC0402FR-1310KL",
+				"vendor":	"Avnet",
+				"sku":	"RC0402FR-1310KL",
+				"price":	0.00098,
+				"preferred":	false,
+				"query_properties":	{
+					"resistance":	10000,
+					"tolerance":	0.01,
+					"category":	"resistor",
+					"_sort":	["area"],
+					"case":	["0402", "0603"],
+					"mounting":	"smd",
+					"min-stock":	1,
+					"_sellers":	["Arrow", "Avnet", "DigiKey", "JLCPCB", "LCSC", "Mouser", "Newark"]
+				}
+			}, {
+				"status":	{
+					"code":	1,
+					"name":	"Auto Selected"
+				},
+				"description":	"50V 100nF X7R ±20% 0402  Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+				"insts":	[{
+						"inst":	{
+							"name":	"element"
+						},
+						"ref":	"C1",
+						"fileinfo":	null
+					}],
+				"datasheet":	"https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Murata-Electronics-GRM155R71H104ME14D_C182412.pdf",
+				"manufacturer":	"MURATA",
+				"mpn":	"GRM155R71H104ME14D",
+				"vendor":	"Arrow",
+				"sku":	"GRM155R71H104ME14D",
+				"price":	0.0038,
+				"preferred":	false,
+				"query_properties":	{
+					"capacitance":	1e-07,
+					"tolerance.max":	0.2,
+					"type":	"ceramic",
+					"temperature-coefficient.code":	["X7R", "X5R"],
+					"min-rated-voltage":	6,
+					"category":	"capacitor",
+					"_sort":	["area"],
+					"case":	["0402", "0603"],
+					"mounting":	"smd",
+					"min-stock":	1,
+					"_sellers":	["Arrow", "Avnet", "DigiKey", "JLCPCB", "LCSC", "Mouser", "Newark"]
+				}
+			}],
+		"entries":	[{
+			}, {
+			}]
+	},
+	"metrics":	[{
+			"name":	"Line Items",
+			"value":	2
+		}, {
+			"name":	"Components",
+			"value":	2
+		}, {
+			"name":	"Cost",
+			"value":	"$0.00"
+		}],
+	"is_update":	false,
+	"old_bom":	{
+		"rows":	[{
+				"status":	{
+					"code":	1,
+					"name":	"Auto Selected"
+				},
+				"description":	"62.5mW Thick Film Resistors 50V ±100ppm/℃ ±1% 10kΩ 0402 Chip Resistor - Surface Mount ROHS",
+				"insts":	[{
+						"inst":	{
+							"name":	"element"
+						},
+						"ref":	"R1",
+						"fileinfo":	null
+					}],
+				"datasheet":	"https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2201271430_YAGEO-RC0402FR-1310KL_C1858459.pdf",
+				"manufacturer":	"YAGEO",
+				"mpn":	"RC0402FR-1310KL",
+				"vendor":	"Avnet",
+				"sku":	"RC0402FR-1310KL",
+				"price":	0.00098,
+				"preferred":	false,
+				"query_properties":	{
+					"resistance":	10000,
+					"tolerance":	0.01,
+					"category":	"resistor",
+					"_sort":	["area"],
+					"case":	["0402", "0603"],
+					"mounting":	"smd",
+					"min-stock":	1,
+					"_sellers":	["Arrow", "Avnet", "DigiKey", "JLCPCB", "LCSC", "Mouser", "Newark"]
+				}
+			}, {
+				"status":	{
+					"code":	1,
+					"name":	"Auto Selected"
+				},
+				"description":	"50V 100nF X7R ±20% 0402  Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+				"insts":	[{
+						"inst":	{
+							"name":	"element"
+						},
+						"ref":	"C1",
+						"fileinfo":	null
+					}],
+				"datasheet":	"https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Murata-Electronics-GRM155R71H104ME14D_C182412.pdf",
+				"manufacturer":	"MURATA",
+				"mpn":	"GRM155R71H104ME14D",
+				"vendor":	"Arrow",
+				"sku":	"GRM155R71H104ME14D",
+				"price":	0.0038,
+				"preferred":	false,
+				"query_properties":	{
+					"capacitance":	1e-07,
+					"tolerance.max":	0.2,
+					"type":	"ceramic",
+					"temperature-coefficient.code":	["X7R", "X5R"],
+					"min-rated-voltage":	6,
+					"category":	"capacitor",
+					"_sort":	["area"],
+					"case":	["0402", "0603"],
+					"mounting":	"smd",
+					"min-stock":	1,
+					"_sellers":	["Arrow", "Avnet", "DigiKey", "JLCPCB", "LCSC", "Mouser", "Newark"]
+				}
+			}],
+		"entries":	[{
+			}, {
+			}]
+	}
+}

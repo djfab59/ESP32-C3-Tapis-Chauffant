@@ -1,0 +1,73 @@
+{
+  "version": 3,
+  "assignments": [
+  ],
+  "id-mapping": {
+    "boxes": [
+      [{"id":"1111111111129NDhVa","unit-id":0},2],
+      [{"id":"11111111111235Sb2M","unit-id":0},4],
+      [{"id":"11111111111xBWCoX","unit-id":0},6],
+      [{"id":"11111111111qufV3b","unit-id":0},9],
+      [{"id":"93BoQGrDSoLS2fxYw6CfWW","unit-id":0},12],
+      [{"id":"3h9i4SpJ2uZNvbDTo7CVFj","unit-id":0},15]
+    ],
+    "inst-boxes": [
+      [{"id":"B9ri4NXVjkxmdaDuhAgnUK","unit-id":0},16],
+      [{"id":"BZTPcUmyK5ZSQ8BYbJraVr","unit-id":0},17]
+    ],
+    "annotation-boxes": [
+    ],
+    "nets": [
+    ],
+    "ports": [
+      ["111111111112vHW7V1",0],
+      ["1111111111133c2gce",1],
+      ["111111111113GDD18p",3],
+      ["1111111111139ZjNna",5],
+      ["111111111113PiDE7c",7],
+      ["111111111113X189Mj",8],
+      ["111111111112cbqDDn",10],
+      ["111111111112UqTL9R",11],
+      ["111111111112HJnCEY",13],
+      ["111111111112NamVgQ",14]
+    ]
+  },
+  "design": {
+    "input": {
+      "paper-size": {
+        "x": 200,
+        "y": 125
+      },
+      "label-style": {
+        "type": "monospace-label-style",
+        "height-in-grid-units": 0.8,
+        "char-width-relative-to-height": 0.6
+      },
+      "boxes": [
+        {"id":2,"sw":{"x":-1,"y":-2},"ne":{"x":5,"y":2},"ports":[{"id":0,"pt":{"x":0,"y":2},"dir":"Up","tag":"AnyTag"},{"id":1,"pt":{"x":0,"y":-2},"dir":"Down","tag":"AnyTag"}],"orientation":{"type":"any-rotation"}},
+        {"id":4,"sw":{"x":-2,"y":-4},"ne":{"x":2,"y":0},"ports":[{"id":3,"pt":{"x":0,"y":0},"dir":"Up","tag":"AnyTag"}],"orientation":{"type":"prefer-rotation","rotations":[0]}},
+        {"id":6,"sw":{"x":-2,"y":0},"ne":{"x":2,"y":3},"ports":[{"id":5,"pt":{"x":0,"y":0},"dir":"Down","tag":"AnyTag"}],"orientation":{"type":"prefer-rotation","rotations":[0]}},
+        {"id":9,"sw":{"x":-1,"y":-2},"ne":{"x":5,"y":2},"ports":[{"id":7,"pt":{"x":0,"y":2},"dir":"Up","tag":"AnyTag"},{"id":8,"pt":{"x":0,"y":-2},"dir":"Down","tag":"AnyTag"}],"orientation":{"type":"any-rotation"}},
+        {"id":12,"sw":{"x":-1,"y":-2},"ne":{"x":5,"y":2},"ports":[{"id":10,"pt":{"x":0,"y":2},"dir":"Up","tag":"AnyTag"},{"id":11,"pt":{"x":0,"y":-2},"dir":"Down","tag":"AnyTag"}],"orientation":{"type":"any-rotation"}},
+        {"id":15,"sw":{"x":-1,"y":-2},"ne":{"x":5,"y":2},"ports":[{"id":13,"pt":{"x":0,"y":2},"dir":"Up","tag":"AnyTag"},{"id":14,"pt":{"x":0,"y":-2},"dir":"Down","tag":"AnyTag"}],"orientation":{"type":"any-rotation"}}
+      ],
+      "insts": [
+        {"id":16,"box":15,"group":null},
+        {"id":17,"box":12,"group":null}
+      ],
+      "nets": [
+        {"id":18,"name":{"type":"ref","value":"GND"},"refs":[{"inst":17,"port":11}],"labeled?":{"type":"symbol","box":4}},
+        {"id":19,"name":{"type":"ref","value":"SIGNAL"},"refs":[{"inst":16,"port":14}],"labeled?":{"type":"string"}},
+        {"id":20,"name":{"type":"ref","value":"VDD"},"refs":[{"inst":17,"port":10},{"inst":16,"port":13}],"labeled?":{"type":"symbol","box":6}}
+      ],
+      "shorts": [
+      ],
+      "schematic-group-order": [
+      ]
+    },
+    "sheets": [
+      {"id":49,"title":null,"groups":[{"id":29,"groups":[null],"border":{"sw":{"x":90,"y":54},"ne":{"x":110,"y":71}},"insts":[{"inst":17,"pose":{"center":{"x":94,"y":63},"angle":0,"flip-x?":false}},{"inst":16,"pose":{"center":{"x":103,"y":62},"angle":0,"flip-x?":false}}],"children":[]}],"nets":[{"id":48,"net":19,"refs":[{"inst":16,"port":14}],"wires":[],"label?":{"type":"string","id":47,"pose":{"center":{"x":103,"y":60},"angle":270,"flip-x?":false}}},{"id":45,"net":20,"refs":[{"inst":16,"port":13}],"wires":[{"id":52,"a":{"x":103,"y":64},"b":{"x":103,"y":65}}],"label?":{"type":"symbol","id":44,"pose":{"center":{"x":103,"y":65},"angle":0,"flip-x?":false}}},{"id":38,"net":20,"refs":[{"inst":17,"port":10}],"wires":[{"id":51,"a":{"x":94,"y":65},"b":{"x":94,"y":66}}],"label?":{"type":"symbol","id":37,"pose":{"center":{"x":94,"y":66},"angle":0,"flip-x?":false}}},{"id":33,"net":18,"refs":[{"inst":17,"port":11}],"wires":[{"id":50,"a":{"x":94,"y":60},"b":{"x":94,"y":61}}],"label?":{"type":"symbol","id":32,"pose":{"center":{"x":94,"y":60},"angle":0,"flip-x?":false}}}]}
+    ],
+    "hierarchical-diagram": null
+  }
+}

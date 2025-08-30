@@ -1,0 +1,274 @@
+; This file is generated based on the parts database query below:")
+;   database-part(["manufacturer" => "Espressif Systems", "mpn" => "ESP32-C3-WROOM-02-H4"])
+#use-added-syntax(jitx)
+defpackage components/Espressif-Systems/ESP32-C3-WROOM-02-H4 :
+  import core
+  import jitx
+  import jitx/commands
+  import ocdb/utils/box-symbol
+
+
+pcb-pad rectangle-smd-pad :
+  name = "rectangle-smd-pad"
+  type = SMD
+  shape = Rectangle(2.000, 1.000)
+  layer(SolderMask(Top)) = Rectangle(2.100, 1.100)
+  layer(Paste(Top)) = Rectangle(2.100, 1.100)
+
+pcb-pad rectangle-smd-pad-1 :
+  name = "rectangle-smd-pad-1"
+  type = SMD
+  shape = Rectangle(0.700, 0.700)
+  layer(SolderMask(Top)) = Rectangle(0.800, 0.800)
+  layer(Paste(Top)) = Rectangle(0.800, 0.800)
+
+pcb-landpattern lp :
+  pad p[1] : rectangle-smd-pad at loc(-8.750, 2.899) on Top
+  pad p[2] : rectangle-smd-pad at loc(-8.750, 1.400) on Top
+  pad p[3] : rectangle-smd-pad at loc(-8.750, -0.101) on Top
+  pad p[4] : rectangle-smd-pad at loc(-8.750, -1.600) on Top
+  pad p[5] : rectangle-smd-pad at loc(-8.750, -3.101) on Top
+  pad p[6] : rectangle-smd-pad at loc(-8.750, -4.600) on Top
+  pad p[7] : rectangle-smd-pad at loc(-8.750, -6.101) on Top
+  pad p[8] : rectangle-smd-pad at loc(-8.750, -7.600) on Top
+  pad p[9] : rectangle-smd-pad at loc(-8.750, -9.101) on Top
+  pad p[10] : rectangle-smd-pad at loc(8.750, -9.101) on Top
+  pad p[11] : rectangle-smd-pad at loc(8.750, -7.600) on Top
+  pad p[12] : rectangle-smd-pad at loc(8.750, -6.101) on Top
+  pad p[13] : rectangle-smd-pad at loc(8.750, -4.600) on Top
+  pad p[14] : rectangle-smd-pad at loc(8.750, -3.101) on Top
+  pad p[15] : rectangle-smd-pad at loc(8.750, -1.600) on Top
+  pad p[16] : rectangle-smd-pad at loc(8.750, -0.101) on Top
+  pad p[17] : rectangle-smd-pad at loc(8.750, 1.400) on Top
+  pad p[18] : rectangle-smd-pad at loc(8.750, 2.899) on Top
+  pad p[19] : rectangle-smd-pad-1 at loc(-0.140, -2.200) on Top
+  pad p[20] : rectangle-smd-pad-1 at loc(-0.140, -3.300) on Top
+  pad p[21] : rectangle-smd-pad-1 at loc(-0.140, -4.400) on Top
+  pad p[22] : rectangle-smd-pad-1 at loc(0.960, -2.200) on Top
+  pad p[23] : rectangle-smd-pad-1 at loc(0.960, -3.300) on Top
+  pad p[24] : rectangle-smd-pad-1 at loc(0.960, -4.400) on Top
+  pad p[25] : rectangle-smd-pad-1 at loc(2.060, -4.400) on Top
+  pad p[26] : rectangle-smd-pad-1 at loc(2.060, -3.300) on Top
+  pad p[27] : rectangle-smd-pad-1 at loc(2.060, -2.200) on Top
+
+  layer(Silkscreen("F-SilkS", Top)) = Text(">REF", 0.5, W, loc(-0.750, 11.806))
+  layer(CustomLayer("Fab", Top)) = Text(">VALUE", 0.5, W, loc(-0.750, 10.806))
+  layer(Silkscreen("F-SilkS", Top)) = Polyline(0.200, [
+    Point(9.000, 3.554)
+    Point(9.000, 10.000)
+    Point(-9.000, 10.000)
+    Point(-9.000, 3.554)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(-9.000, 4.000), Point(9.000, 4.000)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(-9.000, -9.755), Point(-9.000, -10.000)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(-9.000, -8.255), Point(-9.000, -8.446)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(-9.000, -6.755), Point(-9.000, -6.946)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(-9.000, -5.255), Point(-9.000, -5.446)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(-9.000, -3.755), Point(-9.000, -3.946)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(-9.000, -2.255), Point(-9.000, -2.446)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(-9.000, -0.755), Point(-9.000, -0.946)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(-9.000, 0.745), Point(-9.000, 0.554)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(-9.000, 2.245), Point(-9.000, 2.054)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(9.000, 2.054), Point(9.000, 2.245)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(9.000, 0.554), Point(9.000, 0.745)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(9.000, -0.946), Point(9.000, -0.755)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(9.000, -2.446), Point(9.000, -2.255)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(9.000, -3.946), Point(9.000, -3.755)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(9.000, -5.446), Point(9.000, -5.255)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(9.000, -6.946), Point(9.000, -6.755)])
+  layer(Silkscreen("F-SilkS", Top)) = Line(0.200, [Point(9.000, -8.446), Point(9.000, -8.255)])
+  layer(Silkscreen("F-SilkS", Top)) = Polyline(0.200, [
+    Point(-9.000, -10.000)
+    Point(9.000, -10.000)
+    Point(9.000, -9.755)])
+  layer(Silkscreen("F-SilkS", Top)) = Polyline(0.500, [
+    Arc(-9.779, 4.265, 0.250, 0.0, -360.000)])
+  layer(CustomLayer("Fab", Top)) = Polyline(0.060, [
+    Arc(-9.000, 10.011, 0.030, 0.0, -360.000)])
+  layer(CustomLayer("Fab", Top)) = Polyline(0.400, [
+    Arc(-9.698, 2.871, 0.200, 0.0, -360.000)])
+  layer(Silkscreen("F-SilkS", Top)) = PolygonWithArcs([
+    Point(-6.570, 9.585)
+    Point(-4.792, 9.585)
+    Point(-4.792, 7.335)
+    Point(-2.887, 7.335)
+    Point(-2.887, 9.585)
+    Point(-1.109, 9.585)
+    Point(-1.109, 7.317)
+    Point(1.032, 7.317)
+    Point(1.032, 9.567)
+    Point(7.146, 9.567)
+    Point(7.146, 4.505)
+    Point(6.710, 4.505)
+    Point(6.710, 9.131)
+    Point(4.569, 9.131)
+    Point(4.569, 4.487)
+    Point(4.116, 4.487)
+    Point(4.116, 9.131)
+    Point(1.485, 9.131)
+    Point(1.485, 6.918)
+    Point(-1.508, 6.918)
+    Point(-1.508, 9.149)
+    Point(-2.452, 9.149)
+    Point(-2.452, 7.027)
+    Point(-5.191, 7.027)
+    Point(-5.191, 9.294)
+    Point(-6.752, 9.294)
+    Point(-6.752, 7.027)
+    Point(-7.024, 7.027)
+    Point(-7.024, 9.567)
+    Point(-6.570, 9.585)])
+  layer(Courtyard(Top)) = Rectangle(19.600, 20.200)
+
+  model3d = Model3D("{USER_PROJECT_ROOT}/3d-models/jitx-64d153deb789d8dc4b7c6d3c.stp",
+    Vec3D(0.0, 0.0, 0.0),
+    Vec3D(1.000, 1.000, 1.000),
+    Vec3D(0.0, 0.0, 0.0),
+    [],
+    )
+
+pcb-symbol sym-ESP32-C3-WROOM-02-H4 :
+  pin P_3V3 at Point(-8.890, 11.430) with :
+    direction = Left
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin EN at Point(-8.890, 8.890) with :
+    direction = Left
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin IO4 at Point(-8.890, 6.350) with :
+    direction = Left
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin IO5 at Point(-8.890, 3.810) with :
+    direction = Left
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin IO6 at Point(-8.890, 1.270) with :
+    direction = Left
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin IO7 at Point(-8.890, -1.270) with :
+    direction = Left
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin IO8 at Point(-8.890, -3.810) with :
+    direction = Left
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin IO9 at Point(-8.890, -6.350) with :
+    direction = Left
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin GND0 at Point(-8.890, -8.890) with :
+    direction = Left
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin IO10 at Point(-8.890, -11.430) with :
+    direction = Left
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin RXD at Point(8.890, -10.160) with :
+    direction = Right
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin TXD at Point(8.890, -7.620) with :
+    direction = Right
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin IO18 at Point(8.890, -5.080) with :
+    direction = Right
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin IO19 at Point(8.890, -2.540) with :
+    direction = Right
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin IO3 at Point(8.890, 0.0) with :
+    direction = Right
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin IO2 at Point(8.890, 2.540) with :
+    direction = Right
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin IO1 at Point(8.890, 5.080) with :
+    direction = Right
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin IO0 at Point(8.890, 7.620) with :
+    direction = Right
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+  pin GND1 at Point(8.890, 10.160) with :
+    direction = Right
+    length = 2.540
+    number-size = 1.000
+    name-size = 1.000
+
+  draw("value") = Text(">VALUE", 0.7056, C, loc(0.0, 14.081))
+  draw("reference") = Text(">REF", 0.7056, C, loc(0.0, 15.081))
+  draw("foreground") = Rectangle(17.780, 27.940)
+  draw("foreground") = Circle(-7.620, 12.700, 0.381)
+
+public pcb-component component :
+  name = "C2944070"
+  description = "SMD-32P WiFi Modules ROHS"
+  manufacturer = "Espressif Systems"
+  mpn = "ESP32-C3-WROOM-02-H4"
+  datasheet = "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206021745_Espressif-Systems-ESP32-C3-WROOM-02-H4_C2944070.pdf"
+  reference-prefix = "U"
+  pin-properties :
+    [pin:Ref | pads:Ref ... | side:Dir | electrical-type:String | bank:Int]
+    [P_3V3 | p[1] | Left | "unspecified" | 0]
+    [EN | p[2] | Left | "unspecified" | 0]
+    [IO4 | p[3] | Left | "unspecified" | 0]
+    [IO5 | p[4] | Left | "unspecified" | 0]
+    [IO6 | p[5] | Left | "unspecified" | 0]
+    [IO7 | p[6] | Left | "unspecified" | 0]
+    [IO8 | p[7] | Left | "unspecified" | 0]
+    [IO9 | p[8] | Left | "unspecified" | 0]
+    [GND0 | p[9] | Left | "unspecified" | 0]
+    [IO10 | p[10] | Left | "unspecified" | 0]
+    [RXD | p[11] | Right | "unspecified" | 0]
+    [TXD | p[12] | Right | "unspecified" | 0]
+    [IO18 | p[13] | Right | "unspecified" | 0]
+    [IO19 | p[14] | Right | "unspecified" | 0]
+    [IO3 | p[15] | Right | "unspecified" | 0]
+    [IO2 | p[16] | Right | "unspecified" | 0]
+    [IO1 | p[17] | Right | "unspecified" | 0]
+    [IO0 | p[18] | Right | "unspecified" | 0]
+    [GND1 | p[19] p[20] p[21] p[22] p[23] p[24] p[25] p[26] p[27] | Right | "unspecified" | 0]
+
+  assign-landpattern(lp)
+  assign-symbol(sym-ESP32-C3-WROOM-02-H4)
+
+  property(self.category) = "ic"
+  property(self.manufacturer_aliases) = ["Espressif Systems"]
+  property(self.mpn_aliases) = ["ESP32-C3-WROOM-02-H4"]
+  property(self.cofactr_id) = "XXLKYUK1H8D9"
+  property(self.reference_prefix) = "U"
+  property(self.trust) = "low"
+  property(self.x) = 19.600
+  property(self.y) = 20.200
+  property(self.area) = 395.920
+  property(self.case) = "SMD-32P"
+  property(self.mounting) = "smd"
+
