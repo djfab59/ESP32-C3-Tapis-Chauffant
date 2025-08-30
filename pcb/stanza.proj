@@ -1,7 +1,0 @@
-include? ".slm/stanza.proj"
-pkg-cache: ".slm/pkg-cache"
-
-package main defined-in "main.stanza"
-package helpers defined-in "helpers.stanza"
-
-package components/Espressif-Systems/ESP32-C3-WROOM-02-H4 defined-in "components/Espressif-Systems/ESP32-C3-WROOM-02-H4.stanza"
