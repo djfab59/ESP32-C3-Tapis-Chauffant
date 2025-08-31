@@ -2,7 +2,20 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
 #include <Bounce2.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <RTClib.h>
 
+// RTC
+RTC_DS1307 rtc;
+
+// Temp Sensor DS18B20
+#define ONE_WIRE_BUS D8
+
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+
+//Screen
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 128
 #define OLED_ADDR 0x3C
@@ -31,10 +44,25 @@ bool inMenu = false;
 
 // Variables température
 float tempAct = 25.5;  // Température actuelle
-float tempCible = 26.0; // Température à atteindre
+float tempCible = 66.0; // Température à atteindre
 
 void setup() {
   Serial.begin(115200);
+
+  // Initialisation capteur température
+  sensors.begin();
+
+  // Initialisation du RTC
+  I2Cone.begin(I2C_SDA, I2C_SCL, 400000);
+  if (!rtc.begin(&I2Cone)) {
+    Serial.println("RTC introuvable !");
+    while (1);
+  }
+  if (!rtc.isrunning()) {
+    Serial.println("RTC n'etait pas en marche, on regle l'heure !");
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); 
+    // ça met l'heure de compilation comme valeur initiale
+  }
 
   pinMode(D7, OUTPUT);
   digitalWrite(D7, HIGH);
@@ -83,7 +111,21 @@ void drawMenu() {
 }
 
 void loop() {
-// Contrôle relais D7 selon température
+  DateTime now = rtc.now();
+  int h = now.hour();
+  int m = now.minute();
+  int s = now.second();
+
+  // Lecture température
+  sensors.requestTemperatures();
+  tempAct = sensors.getTempCByIndex(0);
+
+  // Debug Force temp val
+  if (tempAct == -127.0) {
+    tempAct = 66.6;
+  }
+
+  // Contrôle relais D7 selon température
   if (tempAct >= tempCible) {
     digitalWrite(D7, LOW);   // relais désactivé / chauffage éteint
   } else {
@@ -117,6 +159,21 @@ void loop() {
   // Affichage
   display.clearDisplay();
   if (!inMenu) {
+
+    // --- Ligne heure ---
+    DateTime now = rtc.now();
+    display.setCursor(0, 0);
+    display.setTextSize(1);
+    if (now.hour() < 10) display.print("0");
+    display.print(now.hour());
+    display.print(":");
+    if (now.minute() < 10) display.print("0");
+    display.print(now.minute());
+    display.print(":");
+    if (now.second() < 10) display.print("0");
+    display.print(now.second());
+
+    // --- Température ---
     display.setCursor(0, 60);
     display.setTextSize(4);
     display.println(tempAct, 1);  // 1 chiffre après la virgule
