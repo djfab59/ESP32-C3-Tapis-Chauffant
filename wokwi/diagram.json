@@ -8,13 +8,6 @@
     { "type": "wokwi-ds1307", "id": "rtc1", "top": 167.4, "left": 67.3, "attrs": {} },
     { "type": "board-ds18b20", "id": "temp1", "top": 258.07, "left": 100.08, "attrs": {} },
     {
-      "type": "board-grove-oled-sh1107",
-      "id": "oled1",
-      "top": 105.37,
-      "left": -160.1,
-      "attrs": {}
-    },
-    {
       "type": "wokwi-pushbutton",
       "id": "btn5",
       "top": 412.2,
@@ -72,11 +65,17 @@
       "attrs": { "value": "4700" }
     },
     { "type": "wokwi-junction", "id": "j12", "top": 360, "left": 110.4, "attrs": {} },
-    { "type": "wokwi-junction", "id": "j11", "top": 504, "left": 33.6, "attrs": {} }
+    { "type": "wokwi-junction", "id": "j11", "top": 504, "left": 33.6, "attrs": {} },
+    {
+      "type": "board-ssd1306",
+      "id": "oled2",
+      "top": 204.74,
+      "left": -134.17,
+      "attrs": { "i2cAddress": "0x3c" }
+    }
   ],
   "connections": [
     [ "esp:GND", "j2:J", "black", [ "h0" ] ],
-    [ "oled1:GND.1", "j1:J", "black", [ "h0" ] ],
     [ "rtc1:GND", "j1:J", "black", [ "h0" ] ],
     [ "j1:J", "j2:J", "black", [ "v0" ] ],
     [ "temp1:GND", "j2:J", "black", [ "v0" ] ],
@@ -86,13 +85,10 @@
     [ "j4:J", "j2:J", "black", [ "v0", "h57.6" ] ],
     [ "esp:5V", "rtc1:5V", "red", [ "h96.62", "v-124.8" ] ],
     [ "j6:J", "j5:J", "#8f4814", [ "v0" ] ],
-    [ "oled1:VCC", "j5:J", "#8f4814", [ "h0" ] ],
     [ "esp:3V3", "j6:J", "#8f4814", [ "h0" ] ],
-    [ "oled1:SDA", "j7:J", "green", [ "h0" ] ],
     [ "j7:J", "rtc1:SDA", "green", [ "v0" ] ],
     [ "j7:J", "j9:J", "green", [ "v0" ] ],
     [ "j9:J", "esp:D10", "green", [ "v0" ] ],
-    [ "oled1:SCL.1", "j8:J", "limegreen", [ "h0" ] ],
     [ "rtc1:SCL", "j8:J", "limegreen", [ "h0" ] ],
     [ "j8:J", "j10:J", "limegreen", [ "v0" ] ],
     [ "j10:J", "esp:D9", "limegreen", [ "v0" ] ],
@@ -113,7 +109,11 @@
     [ "btn6:2.r", "j3:J", "black", [ "v0" ] ],
     [ "esp:D3", "btn6:1.l", "green", [ "h-19.2", "v48", "h86.4" ] ],
     [ "j11:J", "j4:J", "black", [ "v0" ] ],
-    [ "btn7:1.l", "j11:J", "black", [ "v0", "h105.6" ] ]
+    [ "btn7:1.l", "j11:J", "black", [ "v0", "h105.6" ] ],
+    [ "j1:J", "oled2:GND", "black", [ "v0", "h-124.8" ] ],
+    [ "j5:J", "oled2:VCC", "#8f4814", [ "v0", "h-115.2" ] ],
+    [ "j7:J", "oled2:SDA", "green", [ "v0", "h-86.4" ] ],
+    [ "oled2:SCL", "j8:J", "limegreen", [ "v9.6", "h48.3", "v-9.6" ] ]
   ],
   "dependencies": {}
 }
