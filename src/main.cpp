@@ -145,23 +145,23 @@ void setup() {
 
 // Fonction affichage menu
 void drawMenu() {
-  const char* items[] = {"Heure", "Ctl Temp", "Version"};
-  
-  for (int i = 0; i < 3; i++) {
-    int y = 20 + i * 20; // position verticale
-    
+  const char* items[] = {"Date", "Prog Temp", "Wifi", "Version"};
+  int marge = 16;
+
+  for (int i = 0; i < 4; i++) {
+    int y = marge + i * marge; // position verticale
+
     if (i + 1 == menuIndex) {
       // rectangle de sélection
-      u8g2.drawBox(0, y - 14, 128, 16); // -14 pour décaler le haut
+      u8g2.drawBox(0, y - marge, 128, marge); // -14 pour décaler le haut
       u8g2.setDrawColor(0); // texte noir
     } else {
       u8g2.setDrawColor(1); // texte blanc
     }
-    
+
     // dessiner le texte
-    u8g2.setFont(u8g2_font_fub14_tr); // choisir police adaptée
-    u8g2.drawStr(2, y, items[i]);
-    
+    u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
+    u8g2.drawStr(2, y -4, items[i]);
     u8g2.setDrawColor(1); // remettre blanc pour la suite
   }
 }
@@ -290,7 +290,7 @@ void loop() {
   }
   if (inMenu) {
     if (btnHaut.fell() && menuIndex > 1)   menuIndex--;
-    if (btnBas.fell()  && menuIndex < 3)   menuIndex++;
+    if (btnBas.fell()  && menuIndex < 4)   menuIndex++;
     if (btnGauche.fell()) {
       inMenu = false;
       menuIndex = 0;
