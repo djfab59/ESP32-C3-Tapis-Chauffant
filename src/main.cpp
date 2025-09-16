@@ -20,16 +20,14 @@
 #define WIFI_PASSWORD ""
 #endif
 
-// Broches I2C centralisées dans include/pins.h
-
+//Broches + Screen centralisées dans include/pins.h
+// Utilisation du constructeur SH1106 pour ton clone
+//U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+//U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
 // Wifi
 static const char* ssid = WIFI_SSID;
 static const char* password = WIFI_PASSWORD;
-
-// Utilisation du constructeur SH1106 pour ton clone
-//U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
 // RTC
 RTC_DS3231 rtc;
@@ -60,9 +58,22 @@ const unsigned long delay2 = 2500;   // après 2500ms -> repeat rapide
 const unsigned long rate1  = 500;    // vitesse lente : 500ms
 const unsigned long rate2  = 100;    // vitesse rapide : 100ms
 
+// Affichage non bloquant du message "Saved !"
+unsigned long saveMsgUntil = 0;                 // moment où on cesse l'affichage
+const unsigned long saveMsgDuration = 2000;     // durée d'affichage en ms
+
 // Variables d'état du menu
-int menuIndex = 0;     // 0=Accueil, 1=Heure, 2=Ctrl Temp, 3=Version
-bool inMenu = false;
+enum ScreenState {
+  Accueil,
+  Menu,
+  Date,
+  Temp,
+  Wifi,
+  Version
+};
+ScreenState menuState = Accueil;
+// 0=Accueil, 1=Date, 2=Temp, 3=Wifi, 4=Version
+int menuIndex = 0;
 
 // Variables température
 float tempAct = 25.5;  // Température actuelle
@@ -70,6 +81,7 @@ float tempCible = 25.0; // Température à atteindre
 
 void setup() {
   Serial.begin(9600);
+  Serial.print("Setup!");
 
   // Initialisation du capteur de température
   ds.begin();
@@ -92,23 +104,28 @@ void setup() {
   btnGauche.attach(BTN_GAUCHE); btnGauche.interval(25);
   btnDroite.attach(BTN_DROITE); btnDroite.interval(25);
 
-  Serial.print("Coucou");
   // Initialisation du Wifi
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_ncenB08_tr);
   if (std::strlen(ssid) > 0) {
     u8g2.drawStr(0, 8, "Wifi connecting...");
     WiFi.begin(ssid, password);
+    unsigned long startAttemptTime = millis();
     int x = 0;
-    while (WiFi.status() != WL_CONNECTED) {
+    // Attendre au max 10 secondes
+    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
       delay(500);
       u8g2.drawStr(x, 16, ".");
       u8g2.sendBuffer();
-      x = x + 8;
+      x = x + 6;
     }
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_ncenB08_tr);
-    u8g2.drawStr(0, 24, "Wifi connected!!!");
+    if (WiFi.status() == WL_CONNECTED) {
+      u8g2.drawStr(0, 24, "Wifi connected!!!");
+    } else {
+      u8g2.drawStr(0, 24, "Wifi failed (timeout)");
+    }
   } else {
     u8g2.drawStr(0, 24, "Wifi disabled (no creds)");
   }
@@ -164,6 +181,40 @@ void drawMenu() {
     u8g2.drawStr(2, y -4, items[i]);
     u8g2.setDrawColor(1); // remettre blanc pour la suite
   }
+}
+
+// Fonction affichage programation date
+void drawDate() {
+  // dessiner le texte
+  u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
+  u8g2.drawStr(2, 30, "DateProg");
+}
+
+// Fonction affichage programation température
+void drawTemp() {
+  // dessiner le texte
+  u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
+  u8g2.drawStr(2, 30, "TempProg");
+}
+
+// Fonction affichage programation wifi
+void drawWifi() {
+  // dessiner le texte
+  u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
+  u8g2.drawStr(2, 30, "WifiProg");
+}
+
+// Fonction affichage version
+void drawVersion() {
+  // dessiner le texte
+  u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
+  u8g2.drawStr(2, 30, "Version");
+}
+
+// Fonction affichage version
+void drawSave() {
+  // Planifie l'affichage sans bloquer la loop
+  saveMsgUntil = millis() + saveMsgDuration;
 }
 
 // Fonction générique d’auto-repeat
@@ -239,11 +290,32 @@ void drawWiFiIcon(U8G2 &u8g2, int x, int y, long rssi) {
   }
 }
 
+void handleWiFiReconnect(const char* ssid, const char* password) {
+  static unsigned long wifiRetryTimer = 0;
+
+  if (WiFi.status() != WL_CONNECTED) {
+    if (wifiRetryTimer == 0) {
+      // Premier constat de déconnexion → on lance le chrono
+      wifiRetryTimer = millis();
+    } else if (millis() - wifiRetryTimer >= 60000) { // 60 sec
+      Serial.println("WiFi down depuis 60s → tentative de reconnexion...");
+      WiFi.begin(ssid, password);
+      wifiRetryTimer = millis(); // reset pour la prochaine tentative
+    }
+  } else {
+    // Si connecté, on remet le timer à zéro
+    wifiRetryTimer = 0;
+  }
+}
+
 void loop() {
-  Serial.print("Dans le loop");
+  Serial.print("Loop.");
 
   // Activation de l'OTA
   ArduinoOTA.handle();
+
+  // Vérifier/reconnecter le WiFi si besoin
+  handleWiFiReconnect(ssid, password);
 
   // Récupération de la date et de l'heure
   DateTime now = rtc.now();
@@ -284,28 +356,76 @@ void loop() {
   btnDroite.update();
 
   // Navigation menu
-  if (btnDroite.fell()) {
-    inMenu = true;
-    if (menuIndex == 0) menuIndex = 1;
-  }
-  if (inMenu) {
-    if (btnHaut.fell() && menuIndex > 1)   menuIndex--;
-    if (btnBas.fell()  && menuIndex < 4)   menuIndex++;
-    if (btnGauche.fell()) {
-      inMenu = false;
-      menuIndex = 0;
+  if (menuState == Accueil) {
+    if (btnDroite.fell()) {
+      menuState = Menu;
+      if (menuIndex == 0) menuIndex = 1;
     }
-  } else {
     // Ajustement température quand on est en Accueil
     //if (btnHaut.fell()) tempCible += 0.1;
     //if (btnBas.fell())  tempCible -= 0.1;
     handleRepeat(btnHaut, tempCible, +0.1, hautPressedSince, hautLastRepeat);
     handleRepeat(btnBas,  tempCible, -0.1, basPressedSince,  basLastRepeat);
+  } else if (menuState == Menu) {
+    if (btnHaut.fell() && menuIndex > 1)   menuIndex--;
+    if (btnBas.fell()  && menuIndex < 4)   menuIndex++;
+    if (btnGauche.fell()) {
+      menuState = Accueil;
+      menuIndex = 0;
+    }
+    if (btnDroite.fell() && menuIndex == 1) {
+      menuState = Date;
+      menuIndex = 1;
+    }
+    if (btnDroite.fell() && menuIndex == 2) {
+      menuState = Temp;
+      menuIndex = 1;
+    }
+    if (btnDroite.fell() && menuIndex == 3) {
+      menuState = Wifi;
+      menuIndex = 1;
+    }
+    if (btnDroite.fell() && menuIndex == 4) {
+      menuState = Version;
+      menuIndex = 1;
+    }
+  } else if (menuState == Date) {
+    if (btnGauche.fell() && menuIndex > 0)   menuIndex--;
+    if (btnDroite.fell()  && menuIndex < 2)   menuIndex++;
+    if (menuIndex == 0) {
+      menuState = Menu;
+      menuIndex = 1;
+    }
+    if (menuIndex == 2) {
+      drawSave();
+      menuState = Accueil;
+      menuIndex = 0;
+    }
+  } else if (menuState == Temp) {
+    if (btnGauche.fell() && menuIndex > 0)   menuIndex--;
+    if (btnDroite.fell()  && menuIndex < 1)   menuIndex++;
+    if (menuIndex == 0) {
+      menuState = Menu;
+      menuIndex = 2;
+    }
+  } else if (menuState == Wifi) {
+    if (btnGauche.fell() && menuIndex > 0)   menuIndex--;
+    if (btnDroite.fell()  && menuIndex < 1)   menuIndex++;
+    if (menuIndex == 0) {
+      menuState = Menu;
+      menuIndex = 3;
+    }
+  } else if (menuState == Version) {
+    if (btnGauche.fell() && menuIndex > 0)   menuIndex--;
+    if (btnDroite.fell()  && menuIndex < 1)   menuIndex++;
+    if (menuIndex == 0) {
+      menuState = Menu;
+      menuIndex = 4;
+    }
   }
 
-
   u8g2.clearBuffer(); // efface le buffer
-  if (!inMenu) {
+  if (menuState == Accueil) {
     // Affichage de l'écran d'accueil
 
     // Affichage de l'heure
@@ -341,8 +461,22 @@ void loop() {
     drawWiFiIcon(u8g2, x, y, rssi);
     //u8g2.setFont(u8g2_font_t0_12_tf);
     //u8g2.drawStr(11, 16, (String(rssi)).c_str());
-  } else {
+    if (saveMsgUntil && ((long)saveMsgUntil - (long)millis()) > 0) {
+      u8g2.setFont(u8g2_font_fub11_tr);
+      u8g2.drawStr(25, 64, "Saved !");
+    } else if (saveMsgUntil) {
+      saveMsgUntil = 0;
+    }
+  } else if (menuState == Menu) {
       drawMenu();
+  } else if (menuState == Date) {
+      drawDate();
+  } else if (menuState == Temp) {
+      drawTemp();
+  } else if (menuState == Wifi) {
+      drawWifi();
+  } else if (menuState == Version) {
+      drawVersion();
   }
   u8g2.sendBuffer(); // envoie à l'écran
   //delay(2000);
