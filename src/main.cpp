@@ -79,6 +79,10 @@ int menuIndex = 0;
 float tempAct = 25.5;  // Température actuelle
 float tempCible = 25.0; // Température à atteindre
 
+// Variables date
+int day = 30, month = 12, year = 2025;
+int hour = 13, minute = 45;
+
 void setup() {
   Serial.begin(9600);
   Serial.print("Setup!");
@@ -189,41 +193,63 @@ void drawDate() {
   u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
   u8g2.drawStr(30, 11, "DateProg");
   u8g2.setFont(u8g2_font_fub11_tr);
-  int x = 22+9;
-  int y = 35-15;
-  u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
-  u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
-  u8g2.drawPixel(x-2, y-1);u8g2.drawPixel(x-1, y-1);u8g2.drawPixel(x, y-1);u8g2.drawPixel(x+1, y-1);u8g2.drawPixel(x+2, y-1);
-  u8g2.drawPixel(x-1, y-2);u8g2.drawPixel(x, y-2);u8g2.drawPixel(x+1, y-2);
-  u8g2.drawPixel(x, y-3);
-  y = y+18;
-  u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
-  u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
-  u8g2.drawPixel(x-2, y+1);u8g2.drawPixel(x-1, y+1);u8g2.drawPixel(x, y+1);u8g2.drawPixel(x+1, y+1);u8g2.drawPixel(x+2, y+1);
-  u8g2.drawPixel(x-1, y+2);u8g2.drawPixel(x, y+2);u8g2.drawPixel(x+1, y+2);
-  u8g2.drawPixel(x, y+3);
-  x = 49+9;
-  y = 35-15;
-  u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
-  u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
-  u8g2.drawPixel(x-2, y-1);u8g2.drawPixel(x-1, y-1);u8g2.drawPixel(x, y-1);u8g2.drawPixel(x+1, y-1);u8g2.drawPixel(x+2, y-1);
-  u8g2.drawPixel(x-1, y-2);u8g2.drawPixel(x, y-2);u8g2.drawPixel(x+1, y-2);
-  u8g2.drawPixel(x, y-3);
-  y = y+18;
-  u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
-  u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
-  u8g2.drawPixel(x-2, y+1);u8g2.drawPixel(x-1, y+1);u8g2.drawPixel(x, y+1);u8g2.drawPixel(x+1, y+1);u8g2.drawPixel(x+2, y+1);
-  u8g2.drawPixel(x-1, y+2);u8g2.drawPixel(x, y+2);u8g2.drawPixel(x+1, y+2);
-  u8g2.drawPixel(x, y+3);
+  //menuIndex
+  // Tableau de correspondance des flèches
+  int tableau[2][5] = {
+    {22+9, 49+9, 76+9+9, 40+9, 66+9},
+    {35-15, 35-15, 35-15, 57-15, 57-15}
+  };
+
+  // Flèche haut
+  u8g2.drawPixel(tableau[0][menuIndex-1]-3, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]);
+  u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]+3, tableau[1][menuIndex-1]);
+  u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]-1);
+  u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]-2);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]-2);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]-2);
+  u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]-3);
+  // Flèche bas
+  u8g2.drawPixel(tableau[0][menuIndex-1]-3, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18);
+  u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]+3, tableau[1][menuIndex-1]+18);
+  u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]+18+1);
+  u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]+18+2);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+2);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]+18+2);
+  u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+3);
+
+  // int x = 76+9+9;
+  // int y = 35-15;
+  // u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
+  // u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
+  // u8g2.drawPixel(x-2, y-1);u8g2.drawPixel(x-1, y-1);u8g2.drawPixel(x, y-1);u8g2.drawPixel(x+1, y-1);u8g2.drawPixel(x+2, y-1);
+  // u8g2.drawPixel(x-1, y-2);u8g2.drawPixel(x, y-2);u8g2.drawPixel(x+1, y-2);
+  // u8g2.drawPixel(x, y-3);
+  // y = y+18;
+  // u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
+  // u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
+  // u8g2.drawPixel(x-2, y+1);u8g2.drawPixel(x-1, y+1);u8g2.drawPixel(x, y+1);u8g2.drawPixel(x+1, y+1);u8g2.drawPixel(x+2, y+1);
+  // u8g2.drawPixel(x-1, y+2);u8g2.drawPixel(x, y+2);u8g2.drawPixel(x+1, y+2);
+  // u8g2.drawPixel(x, y+3);
+
+  // x = 40+9;
+  // y = 57-15;
+  // u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
+  // u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
+  // u8g2.drawPixel(x-2, y-1);u8g2.drawPixel(x-1, y-1);u8g2.drawPixel(x, y-1);u8g2.drawPixel(x+1, y-1);u8g2.drawPixel(x+2, y-1);
+  // u8g2.drawPixel(x-1, y-2);u8g2.drawPixel(x, y-2);u8g2.drawPixel(x+1, y-2);
+  // u8g2.drawPixel(x, y-3);
+  // y = y+18;
+  // u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
+  // u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
+  // u8g2.drawPixel(x-2, y+1);u8g2.drawPixel(x-1, y+1);u8g2.drawPixel(x, y+1);u8g2.drawPixel(x+1, y+1);u8g2.drawPixel(x+2, y+1);
+  // u8g2.drawPixel(x-1, y+2);u8g2.drawPixel(x, y+2);u8g2.drawPixel(x+1, y+2);
+  // u8g2.drawPixel(x, y+3);
+
   u8g2.drawStr(22, 35, "22");
   u8g2.drawStr(42, 35, "/");
   u8g2.drawStr(49, 35, "09");
   u8g2.drawStr(69, 35, "/");
   u8g2.drawStr(76, 35, "2025");
 
-  u8g2.drawStr(40, 60, "12");
-  u8g2.drawStr(60, 60, ":");
-  u8g2.drawStr(66, 60, "34");
+  u8g2.drawStr(40, 57, "12");
+  u8g2.drawStr(60, 57, ":");
+  u8g2.drawStr(66, 57, "34");
 
 }
 
@@ -360,8 +386,13 @@ void loop() {
   //sprintf(date, "%02d/%02d/%04d %02d:%02d:%02d",
   //  now.day(), now.month(), now.year(),
   //  now.hour(), now.minute(), now.second());
+  day=now.day();
+  month=now.month();
+  year=now.year();
+  hour=now.hour();
+  minute=now.minute();
   sprintf(date, "%02d/%02d %02d:%02d:%02d",
-    now.day(), now.month(), now.hour(), now.minute(), now.second());
+    day, month, hour, minute, now.second());
 
   // Mise à jour de la tempéraure
   // Timer pour la température
@@ -428,12 +459,30 @@ void loop() {
     }
   } else if (menuState == Date) {
     if (btnGauche.fell() && menuIndex > 0)   menuIndex--;
-    if (btnDroite.fell()  && menuIndex < 2)   menuIndex++;
+    if (btnDroite.fell()  && menuIndex < 6)   menuIndex++;
     if (menuIndex == 0) {
       menuState = Menu;
       menuIndex = 1;
     }
-    if (menuIndex == 2) {
+    if (menuIndex == 1 && btnHaut.fell() && day < 31) {
+      day++;
+    }
+    if (menuIndex == 1 && btnBas.fell() && day > 1) {
+      day--;
+    }
+    if (menuIndex == 2 && btnHaut.fell() && month < 12) {
+      month++;
+    }
+    if (menuIndex == 2 && btnBas.fell() && month > 1) {
+      month--;
+    }
+    if (menuIndex == 3 && btnHaut.fell() && year < 9999) {
+      year++;
+    }
+    if (menuIndex == 3 && btnBas.fell() && year > 0) {
+      year--;
+    }
+    if (menuIndex == 6) {
       drawSave();
       menuState = Accueil;
       menuIndex = 0;
