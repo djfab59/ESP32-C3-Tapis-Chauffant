@@ -56,7 +56,7 @@ static unsigned long basPressedSince  = 0, basLastRepeat  = 0;
 const unsigned long delay1 = 500;   // après 500ms -> repeat lent
 const unsigned long delay2 = 2500;   // après 2500ms -> repeat rapide
 const unsigned long rate1  = 500;    // vitesse lente : 500ms
-const unsigned long rate2  = 100;    // vitesse rapide : 100ms
+const unsigned long rate2  = 50;    // vitesse rapide : 100ms
 
 // Affichage non bloquant du message "Saved !"
 unsigned long saveMsgUntil = 0;                 // moment où on cesse l'affichage
@@ -83,6 +83,16 @@ float tempCible = 25.0; // Température à atteindre
 int day = 30, month = 12, year = 2025;
 int hour = 13, minute = 45;
 
+// Variable Prog Temp
+int progHourDay = 9;
+int progMinuteDay = 30;
+float progTempDay = 25.5;
+int progHourNight = 19;
+int progMinuteNight = 0;
+float progTempNight = 20.5;
+int progHourDayTemp, progMinuteDayTemp, progHourNightTemp, progMinuteNightTemp;
+float progTempDayTemp, progTempNightTemp;
+
 void setup() {
   Serial.begin(9600);
   Serial.print("Setup!");
@@ -107,6 +117,9 @@ void setup() {
   btnBas.attach(BTN_BAS);       btnBas.interval(25);
   btnGauche.attach(BTN_GAUCHE); btnGauche.interval(25);
   btnDroite.attach(BTN_DROITE); btnDroite.interval(25);
+
+  // Initialisation du relais
+  pinMode(PIN_RELAY, OUTPUT);
 
   // Initialisation du Wifi
   u8g2.clearBuffer();
@@ -213,51 +226,65 @@ void drawDate() {
   u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]+18+2);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+2);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]+18+2);
   u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+3);
 
-  // int x = 76+9+9;
-  // int y = 35-15;
-  // u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
-  // u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
-  // u8g2.drawPixel(x-2, y-1);u8g2.drawPixel(x-1, y-1);u8g2.drawPixel(x, y-1);u8g2.drawPixel(x+1, y-1);u8g2.drawPixel(x+2, y-1);
-  // u8g2.drawPixel(x-1, y-2);u8g2.drawPixel(x, y-2);u8g2.drawPixel(x+1, y-2);
-  // u8g2.drawPixel(x, y-3);
-  // y = y+18;
-  // u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
-  // u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
-  // u8g2.drawPixel(x-2, y+1);u8g2.drawPixel(x-1, y+1);u8g2.drawPixel(x, y+1);u8g2.drawPixel(x+1, y+1);u8g2.drawPixel(x+2, y+1);
-  // u8g2.drawPixel(x-1, y+2);u8g2.drawPixel(x, y+2);u8g2.drawPixel(x+1, y+2);
-  // u8g2.drawPixel(x, y+3);
-
-  // x = 40+9;
-  // y = 57-15;
-  // u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
-  // u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
-  // u8g2.drawPixel(x-2, y-1);u8g2.drawPixel(x-1, y-1);u8g2.drawPixel(x, y-1);u8g2.drawPixel(x+1, y-1);u8g2.drawPixel(x+2, y-1);
-  // u8g2.drawPixel(x-1, y-2);u8g2.drawPixel(x, y-2);u8g2.drawPixel(x+1, y-2);
-  // u8g2.drawPixel(x, y-3);
-  // y = y+18;
-  // u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
-  // u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
-  // u8g2.drawPixel(x-2, y+1);u8g2.drawPixel(x-1, y+1);u8g2.drawPixel(x, y+1);u8g2.drawPixel(x+1, y+1);u8g2.drawPixel(x+2, y+1);
-  // u8g2.drawPixel(x-1, y+2);u8g2.drawPixel(x, y+2);u8g2.drawPixel(x+1, y+2);
-  // u8g2.drawPixel(x, y+3);
-
-  u8g2.drawStr(22, 35, "22");
+  String sday = (day < 10 ? "0" : "") + String(day);
+  u8g2.drawStr(22, 35, sday.c_str());
   u8g2.drawStr(42, 35, "/");
-  u8g2.drawStr(49, 35, "09");
+  String smonth = (month < 10 ? "0" : "") + String(month);
+  u8g2.drawStr(49, 35, smonth.c_str());
   u8g2.drawStr(69, 35, "/");
-  u8g2.drawStr(76, 35, "2025");
+  String syear = String(year);
+  u8g2.drawStr(76, 35, syear.c_str());
 
-  u8g2.drawStr(40, 57, "12");
+  String shour = (hour < 10 ? "0" : "") + String(hour);
+  u8g2.drawStr(40, 57, shour.c_str());
   u8g2.drawStr(60, 57, ":");
-  u8g2.drawStr(66, 57, "34");
-
+  String sminute = (minute < 10 ? "0" : "") + String(minute);
+  u8g2.drawStr(66, 57, sminute.c_str());
 }
 
 // Fonction affichage programation température
 void drawTemp() {
-  // dessiner le texte
   u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
-  u8g2.drawStr(2, 30, "TempProg");
+  u8g2.drawStr(30, 11, "TempProg");
+
+ // Tableau de correspondance des flèches
+  int tableau[2][6] = {
+    {24+9, 51+9, 88+9+9, 24+9, 51+9, 88+9+9},
+    {35-15, 35-15, 35-15, 57-15, 57-15, 57-15}
+  };
+
+  // Flèche haut
+  u8g2.drawPixel(tableau[0][menuIndex-1]-3, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]);
+  u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]+3, tableau[1][menuIndex-1]);
+  u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]-1);
+  u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]-2);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]-2);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]-2);
+  u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]-3);
+  // Flèche bas
+  u8g2.drawPixel(tableau[0][menuIndex-1]-3, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18);
+  u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]+3, tableau[1][menuIndex-1]+18);
+  u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]+18+1);
+  u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]+18+2);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+2);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]+18+2);
+  u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+3);
+
+  u8g2.drawStr(0, 35, "D_");
+  String sprogHourDayTemp = (progHourDayTemp < 10 ? "0" : "") + String(progHourDayTemp);
+  u8g2.drawStr(24, 35, sprogHourDayTemp.c_str());
+  u8g2.drawStr(44, 35, ":");
+  String sProgMinuteDayTemp = (progMinuteDayTemp < 10 ? "0" : "") + String(progMinuteDayTemp);
+  u8g2.drawStr(51, 35, sProgMinuteDayTemp.c_str());
+  u8g2.drawStr(71, 35, "=");
+  String sprogTempDayTemp = (progTempDayTemp < 9.9 ? "0" : "") + String(progTempDayTemp,1);
+  u8g2.drawStr(88, 35, sprogTempDayTemp.c_str());
+
+  u8g2.drawStr(0, 57, "N_");
+  String sprogHourNightTemp = (progHourNightTemp < 10 ? "0" : "") + String(progHourNightTemp);
+  u8g2.drawStr(24, 57, sprogHourNightTemp.c_str());
+  u8g2.drawStr(44, 57, ":");
+  String sProgMinuteNightTemp = (progMinuteNightTemp < 10 ? "0" : "") + String(progMinuteNightTemp);
+  u8g2.drawStr(51, 57, sProgMinuteNightTemp.c_str());
+  u8g2.drawStr(71, 57, "=");
+  String sprogTempNightTemp = (progTempNightTemp < 9.9 ? "0" : "") + String(progTempNightTemp,1);
+  u8g2.drawStr(88, 57, sprogTempNightTemp.c_str());
 }
 
 // Fonction affichage programation wifi
@@ -303,6 +330,37 @@ void handleRepeat(Bounce &btn, float &target, float step, unsigned long &pressed
 
     if (interval > 0 && now - lastRepeat >= interval) {
       target += step;
+      lastRepeat = now;
+    }
+  }
+}
+
+void handleRepeatInt(Bounce &btn, int &target, int minVal, int maxVal,
+                     int step, unsigned long &pressedSince, unsigned long &lastRepeat) {
+  unsigned long now = millis();
+
+  if (btn.fell()) {
+    target += step;
+    if (target > maxVal) target = minVal;
+    if (target < minVal) target = maxVal;
+    pressedSince = now;
+    lastRepeat   = now;
+  }
+
+  if (btn.read() == LOW) { // Bouton maintenu
+    unsigned long held = now - pressedSince;
+    unsigned long interval = 0;
+
+    if (held > delay2) {
+      interval = rate2;    // rapide
+    } else if (held > delay1) {
+      interval = rate1;    // lent
+    }
+
+    if (interval > 0 && now - lastRepeat >= interval) {
+      target += step;
+      if (target > maxVal) target = minVal;
+      if (target < minVal) target = maxVal;
       lastRepeat = now;
     }
   }
@@ -372,7 +430,7 @@ void handleWiFiReconnect(const char* ssid, const char* password) {
 }
 
 void loop() {
-  Serial.print("Loop.");
+  //Serial.print("Loop.");
 
   // Activation de l'OTA
   ArduinoOTA.handle();
@@ -381,18 +439,21 @@ void loop() {
   handleWiFiReconnect(ssid, password);
 
   // Récupération de la date et de l'heure
-  DateTime now = rtc.now();
   char date[30];
-  //sprintf(date, "%02d/%02d/%04d %02d:%02d:%02d",
-  //  now.day(), now.month(), now.year(),
-  //  now.hour(), now.minute(), now.second());
-  day=now.day();
-  month=now.month();
-  year=now.year();
-  hour=now.hour();
-  minute=now.minute();
+  DateTime now = rtc.now();
+  if (menuState != Date) {
+    //sprintf(date, "%02d/%02d/%04d %02d:%02d:%02d",
+    //  now.day(), now.month(), now.year(),
+    //  now.hour(), now.minute(), now.second());
+    day=now.day();
+    month=now.month();
+    year=now.year();
+    hour=now.hour();
+    minute=now.minute();
+  }
   sprintf(date, "%02d/%02d %02d:%02d:%02d",
     day, month, hour, minute, now.second());
+  Serial.println(date);
 
   // Mise à jour de la tempéraure
   // Timer pour la température
@@ -448,6 +509,12 @@ void loop() {
     if (btnDroite.fell() && menuIndex == 2) {
       menuState = Temp;
       menuIndex = 1;
+      progHourDayTemp = progHourDay;
+      progMinuteDayTemp = progMinuteDay;
+      progTempDayTemp = progTempDay;
+      progHourNightTemp = progHourNight;
+      progMinuteNightTemp = progMinuteNight;
+      progTempNightTemp = progTempNight;
     }
     if (btnDroite.fell() && menuIndex == 3) {
       menuState = Wifi;
@@ -464,35 +531,74 @@ void loop() {
       menuState = Menu;
       menuIndex = 1;
     }
-    if (menuIndex == 1 && btnHaut.fell() && day < 31) {
-      day++;
+    if (menuIndex == 1) {
+      handleRepeatInt(btnHaut, day, 1, 31, +1, hautPressedSince, hautLastRepeat);
+      handleRepeatInt(btnBas, day, 1, 31, -1, basPressedSince, basLastRepeat);
     }
-    if (menuIndex == 1 && btnBas.fell() && day > 1) {
-      day--;
+    if (menuIndex == 2) {
+      handleRepeatInt(btnHaut, month, 1, 12, +1, hautPressedSince, hautLastRepeat);
+      handleRepeatInt(btnBas, month, 1, 12, -1, basPressedSince, basLastRepeat);
     }
-    if (menuIndex == 2 && btnHaut.fell() && month < 12) {
-      month++;
+    if (menuIndex == 3) {
+      handleRepeatInt(btnHaut, year, 1, 9999, +1, hautPressedSince, hautLastRepeat);
+      handleRepeatInt(btnBas, year, 1, 9999, -1, basPressedSince, basLastRepeat);
     }
-    if (menuIndex == 2 && btnBas.fell() && month > 1) {
-      month--;
+    if (menuIndex == 4) {
+      handleRepeatInt(btnHaut, hour, 0, 23, +1, hautPressedSince, hautLastRepeat);
+      handleRepeatInt(btnBas, hour, 0, 23, -1, basPressedSince, basLastRepeat);
     }
-    if (menuIndex == 3 && btnHaut.fell() && year < 9999) {
-      year++;
-    }
-    if (menuIndex == 3 && btnBas.fell() && year > 0) {
-      year--;
+    if (menuIndex == 5) {
+      handleRepeatInt(btnHaut, minute, 0, 59, +1, hautPressedSince, hautLastRepeat);
+      handleRepeatInt(btnBas, minute, 0, 59, -1, basPressedSince, basLastRepeat);
     }
     if (menuIndex == 6) {
       drawSave();
+      DateTime nouvelleDate(year, month, day, hour, minute, 0);
+      rtc.adjust(nouvelleDate);
       menuState = Accueil;
       menuIndex = 0;
     }
   } else if (menuState == Temp) {
     if (btnGauche.fell() && menuIndex > 0)   menuIndex--;
-    if (btnDroite.fell()  && menuIndex < 1)   menuIndex++;
+    if (btnDroite.fell()  && menuIndex < 7)   menuIndex++;
     if (menuIndex == 0) {
       menuState = Menu;
       menuIndex = 2;
+    }
+    if (menuIndex == 1) {
+      handleRepeatInt(btnHaut, progHourDayTemp, 0, 23, +1, hautPressedSince, hautLastRepeat);
+      handleRepeatInt(btnBas, progHourDayTemp, 0, 23, -1, basPressedSince, basLastRepeat);
+    }
+    if (menuIndex == 2) {
+      handleRepeatInt(btnHaut, progMinuteDayTemp, 0, 59, +1, hautPressedSince, hautLastRepeat);
+      handleRepeatInt(btnBas, progMinuteDayTemp, 0, 59, -1, basPressedSince, basLastRepeat);
+    }
+    if (menuIndex == 3) {
+      handleRepeat(btnHaut, progTempDayTemp, +0.1, hautPressedSince, hautLastRepeat);
+      handleRepeat(btnBas,  progTempDayTemp, -0.1, basPressedSince,  basLastRepeat);
+    }
+    if (menuIndex == 4) {
+      handleRepeatInt(btnHaut, progHourNightTemp, 0, 23, +1, hautPressedSince, hautLastRepeat);
+      handleRepeatInt(btnBas, progHourNightTemp, 0, 23, -1, basPressedSince, basLastRepeat);
+    }
+    if (menuIndex == 5) {
+      handleRepeatInt(btnHaut, progMinuteNightTemp, 0, 59, +1, hautPressedSince, hautLastRepeat);
+      handleRepeatInt(btnBas, progMinuteNightTemp, 0, 59, -1, basPressedSince, basLastRepeat);
+    }
+    if (menuIndex == 6) {
+      handleRepeat(btnHaut, progTempNightTemp, +0.1, hautPressedSince, hautLastRepeat);
+      handleRepeat(btnBas,  progTempNightTemp, -0.1, basPressedSince,  basLastRepeat);
+    }
+    if (menuIndex == 7) {
+      drawSave();
+      menuState = Accueil;
+      menuIndex = 0;
+      progHourDay = progHourDayTemp;
+      progMinuteDay = progMinuteDayTemp;
+      progTempDay = progTempDayTemp;
+      progHourNight = progHourNightTemp;
+      progMinuteNight = progMinuteNightTemp;
+      progTempNight = progTempNightTemp;
     }
   } else if (menuState == Wifi) {
     if (btnGauche.fell() && menuIndex > 0)   menuIndex--;
@@ -539,6 +645,9 @@ void loop() {
     {
       u8g2.setFont(u8g2_font_open_iconic_embedded_2x_t);
       u8g2.drawGlyph(0, 64, 0x0043);
+      digitalWrite(PIN_RELAY, HIGH);  // relais ON
+    } else {
+      digitalWrite(PIN_RELAY, LOW);   // relais OFF
     }
 
     // Affichage du signal wifi
