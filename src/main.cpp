@@ -187,7 +187,44 @@ void drawMenu() {
 void drawDate() {
   // dessiner le texte
   u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
-  u8g2.drawStr(2, 30, "DateProg");
+  u8g2.drawStr(30, 11, "DateProg");
+  u8g2.setFont(u8g2_font_fub11_tr);
+  int x = 22+9;
+  int y = 35-15;
+  u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
+  u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
+  u8g2.drawPixel(x-2, y-1);u8g2.drawPixel(x-1, y-1);u8g2.drawPixel(x, y-1);u8g2.drawPixel(x+1, y-1);u8g2.drawPixel(x+2, y-1);
+  u8g2.drawPixel(x-1, y-2);u8g2.drawPixel(x, y-2);u8g2.drawPixel(x+1, y-2);
+  u8g2.drawPixel(x, y-3);
+  y = y+18;
+  u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
+  u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
+  u8g2.drawPixel(x-2, y+1);u8g2.drawPixel(x-1, y+1);u8g2.drawPixel(x, y+1);u8g2.drawPixel(x+1, y+1);u8g2.drawPixel(x+2, y+1);
+  u8g2.drawPixel(x-1, y+2);u8g2.drawPixel(x, y+2);u8g2.drawPixel(x+1, y+2);
+  u8g2.drawPixel(x, y+3);
+  x = 49+9;
+  y = 35-15;
+  u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
+  u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
+  u8g2.drawPixel(x-2, y-1);u8g2.drawPixel(x-1, y-1);u8g2.drawPixel(x, y-1);u8g2.drawPixel(x+1, y-1);u8g2.drawPixel(x+2, y-1);
+  u8g2.drawPixel(x-1, y-2);u8g2.drawPixel(x, y-2);u8g2.drawPixel(x+1, y-2);
+  u8g2.drawPixel(x, y-3);
+  y = y+18;
+  u8g2.drawPixel(x-3, y);u8g2.drawPixel(x-2, y);u8g2.drawPixel(x-1, y);u8g2.drawPixel(x, y);
+  u8g2.drawPixel(x+1, y);u8g2.drawPixel(x+2, y);u8g2.drawPixel(x+3, y);
+  u8g2.drawPixel(x-2, y+1);u8g2.drawPixel(x-1, y+1);u8g2.drawPixel(x, y+1);u8g2.drawPixel(x+1, y+1);u8g2.drawPixel(x+2, y+1);
+  u8g2.drawPixel(x-1, y+2);u8g2.drawPixel(x, y+2);u8g2.drawPixel(x+1, y+2);
+  u8g2.drawPixel(x, y+3);
+  u8g2.drawStr(22, 35, "22");
+  u8g2.drawStr(42, 35, "/");
+  u8g2.drawStr(49, 35, "09");
+  u8g2.drawStr(69, 35, "/");
+  u8g2.drawStr(76, 35, "2025");
+
+  u8g2.drawStr(40, 60, "12");
+  u8g2.drawStr(60, 60, ":");
+  u8g2.drawStr(66, 60, "34");
+
 }
 
 // Fonction affichage programation température
