@@ -6,6 +6,7 @@
 #include <ArduinoOTA.h>
 #include <RTClib.h>
 #include <cstring>
+#include <Preferences.h>
 #include "pins.h"
 
 #if __has_include("secrets.h")
@@ -24,6 +25,9 @@
 // Utilisation du constructeur SH1106 pour ton clone
 //U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 //U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+
+// Save
+Preferences prefs;
 
 // Wifi
 static const char* ssid = WIFI_SSID;
@@ -96,6 +100,19 @@ float progTempDayTemp, progTempNightTemp;
 void setup() {
   Serial.begin(9600);
   Serial.print("Setup!");
+
+  // Initialisation des préférences
+  // Ouvre un "namespace" appelé "config"
+  prefs.begin("config", true);
+  // Récupère les valeurs stockées, sinon met la valeur par défaut
+  progHourDay   = prefs.getInt("hourDay",   progHourDay);
+  progMinuteDay = prefs.getInt("minDay",    progMinuteDay);
+  progTempDay   = prefs.getFloat("tempDay", progTempDay);
+  progHourNight   = prefs.getInt("hourNight",   progHourNight);
+  progMinuteNight = prefs.getInt("minNight",    progMinuteNight);
+  progTempNight   = prefs.getFloat("tempNight", progTempNight);
+  // Ferme les préférences
+  prefs.end();
 
   // Initialisation du capteur de température
   ds.begin();
@@ -177,6 +194,46 @@ void setup() {
   ArduinoOTA.begin();
 }
 
+// Fonction dessin flèche haut/bas
+void drawArrow (int x, int y, int fontSize, int nbCharacter) {
+  //calcul de la position de la flèche par rapport à la taille de la police est du nombre de charactère
+  int y_margeHaut, y_margeBas;
+  if (fontSize==11) {
+  	x = x + 9 * ( nbCharacter / 2 );
+  	//y = y - 15;
+  	y_margeHaut = -15;
+  	y_margeBas = 3;
+  } else {
+  	x = x + 9 * ( nbCharacter / 2 );
+  	//y = y - 15;
+  	y_margeHaut = -18;
+  	y_margeBas = 3;
+  }
+  // Flèche haut
+  for (int dx=-3; dx<=3; dx++) {
+    u8g2.drawPixel(x+dx, y+y_margeHaut);
+  }
+  for (int dx=-2; dx<=2; dx++) {
+    u8g2.drawPixel(x+dx, y+y_margeHaut-1);
+  }
+  for (int dx=-1; dx<=1; dx++) {
+    u8g2.drawPixel(x+dx, y+y_margeHaut-2);
+  }
+  u8g2.drawPixel(x, y+y_margeHaut-3);
+
+  // Flèche bas
+  for (int dx=-3; dx<=3; dx++) {
+    u8g2.drawPixel(x+dx, y+y_margeBas);
+  }
+  for (int dx=-2; dx<=2; dx++) {
+    u8g2.drawPixel(x+dx, y+y_margeBas+1);
+  }
+  for (int dx=-1; dx<=1; dx++) {
+    u8g2.drawPixel(x+dx, y+y_margeBas+2);
+  }
+  u8g2.drawPixel(x, y+y_margeBas+3);
+}
+
 // Fonction affichage menu
 void drawMenu() {
   const char* items[] = {"Date", "Prog Temp", "Wifi", "Version"};
@@ -192,7 +249,6 @@ void drawMenu() {
     } else {
       u8g2.setDrawColor(1); // texte blanc
     }
-
     // dessiner le texte
     u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
     u8g2.drawStr(2, y -4, items[i]);
@@ -205,41 +261,31 @@ void drawDate() {
   // dessiner le texte
   u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
   u8g2.drawStr(30, 11, "DateProg");
-  u8g2.setFont(u8g2_font_fub11_tr);
-  //menuIndex
-  // Tableau de correspondance des flèches
-  int tableau[2][5] = {
-    {22+9, 49+9, 76+9+9, 40+9, 66+9},
-    {35-15, 35-15, 35-15, 57-15, 57-15}
-  };
 
-  // Flèche haut
-  u8g2.drawPixel(tableau[0][menuIndex-1]-3, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]);
-  u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]+3, tableau[1][menuIndex-1]);
-  u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]-1);
-  u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]-2);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]-2);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]-2);
-  u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]-3);
-  // Flèche bas
-  u8g2.drawPixel(tableau[0][menuIndex-1]-3, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18);
-  u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]+3, tableau[1][menuIndex-1]+18);
-  u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]+18+1);
-  u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]+18+2);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+2);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]+18+2);
-  u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+3);
-
+  // Affichage date
   String sday = (day < 10 ? "0" : "") + String(day);
   u8g2.drawStr(22, 35, sday.c_str());
+  if (menuIndex==1) drawArrow(22,35,11,2);
   u8g2.drawStr(42, 35, "/");
   String smonth = (month < 10 ? "0" : "") + String(month);
   u8g2.drawStr(49, 35, smonth.c_str());
+  if (menuIndex==2) drawArrow(49,35,11,2);
   u8g2.drawStr(69, 35, "/");
   String syear = String(year);
   u8g2.drawStr(76, 35, syear.c_str());
+  if (menuIndex==3) drawArrow(76,35,11,4);
 
+  // Affichage heure
   String shour = (hour < 10 ? "0" : "") + String(hour);
   u8g2.drawStr(40, 57, shour.c_str());
+  if (menuIndex==4) drawArrow(40,57,11,2);
   u8g2.drawStr(60, 57, ":");
   String sminute = (minute < 10 ? "0" : "") + String(minute);
   u8g2.drawStr(66, 57, sminute.c_str());
+  if (menuIndex==5) drawArrow(66,57,11,2);
+
+  u8g2.setFont(u8g2_font_open_iconic_check_1x_t);
+  u8g2.drawGlyph(100, 57, 0x0040);
 }
 
 // Fonction affichage programation température
@@ -247,44 +293,33 @@ void drawTemp() {
   u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
   u8g2.drawStr(30, 11, "TempProg");
 
- // Tableau de correspondance des flèches
-  int tableau[2][6] = {
-    {24+9, 51+9, 88+9+9, 24+9, 51+9, 88+9+9},
-    {35-15, 35-15, 35-15, 57-15, 57-15, 57-15}
-  };
-
-  // Flèche haut
-  u8g2.drawPixel(tableau[0][menuIndex-1]-3, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]);
-  u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]);u8g2.drawPixel(tableau[0][menuIndex-1]+3, tableau[1][menuIndex-1]);
-  u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]-1);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]-1);
-  u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]-2);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]-2);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]-2);
-  u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]-3);
-  // Flèche bas
-  u8g2.drawPixel(tableau[0][menuIndex-1]-3, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18);
-  u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]+18);u8g2.drawPixel(tableau[0][menuIndex-1]+3, tableau[1][menuIndex-1]+18);
-  u8g2.drawPixel(tableau[0][menuIndex-1]-2, tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]+18+1);u8g2.drawPixel(tableau[0][menuIndex-1]+2, tableau[1][menuIndex-1]+18+1);
-  u8g2.drawPixel(tableau[0][menuIndex-1]-1, tableau[1][menuIndex-1]+18+2);u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+2);u8g2.drawPixel(tableau[0][menuIndex-1]+1, tableau[1][menuIndex-1]+18+2);
-  u8g2.drawPixel(tableau[0][menuIndex-1], tableau[1][menuIndex-1]+18+3);
-
+  // Affichage programmation jour
   u8g2.drawStr(0, 35, "D_");
   String sprogHourDayTemp = (progHourDayTemp < 10 ? "0" : "") + String(progHourDayTemp);
   u8g2.drawStr(24, 35, sprogHourDayTemp.c_str());
+  if (menuIndex==1) drawArrow(24,35,11,2);
   u8g2.drawStr(44, 35, ":");
   String sProgMinuteDayTemp = (progMinuteDayTemp < 10 ? "0" : "") + String(progMinuteDayTemp);
   u8g2.drawStr(51, 35, sProgMinuteDayTemp.c_str());
+  if (menuIndex==2) drawArrow(51,35,11,2);
   u8g2.drawStr(71, 35, "=");
   String sprogTempDayTemp = (progTempDayTemp < 9.9 ? "0" : "") + String(progTempDayTemp,1);
   u8g2.drawStr(88, 35, sprogTempDayTemp.c_str());
+  if (menuIndex==3) drawArrow(88,35,11,4);
 
+  // Affichage programmation nuit
   u8g2.drawStr(0, 57, "N_");
   String sprogHourNightTemp = (progHourNightTemp < 10 ? "0" : "") + String(progHourNightTemp);
   u8g2.drawStr(24, 57, sprogHourNightTemp.c_str());
+  if (menuIndex==4) drawArrow(24,57,11,2);
   u8g2.drawStr(44, 57, ":");
   String sProgMinuteNightTemp = (progMinuteNightTemp < 10 ? "0" : "") + String(progMinuteNightTemp);
   u8g2.drawStr(51, 57, sProgMinuteNightTemp.c_str());
+  if (menuIndex==5) drawArrow(51,57,11,2);
   u8g2.drawStr(71, 57, "=");
   String sprogTempNightTemp = (progTempNightTemp < 9.9 ? "0" : "") + String(progTempNightTemp,1);
   u8g2.drawStr(88, 57, sprogTempNightTemp.c_str());
+  if (menuIndex==6) drawArrow(88,57,11,4);
 }
 
 // Fonction affichage programation wifi
@@ -593,12 +628,22 @@ void loop() {
       drawSave();
       menuState = Accueil;
       menuIndex = 0;
+      // Mise à jour des valeurs
       progHourDay = progHourDayTemp;
       progMinuteDay = progMinuteDayTemp;
       progTempDay = progTempDayTemp;
       progHourNight = progHourNightTemp;
       progMinuteNight = progMinuteNightTemp;
       progTempNight = progTempNightTemp;
+      // Sauvegarde dans les préférences
+      prefs.begin("config", false);
+      prefs.putInt("hourDay", progHourDay);
+      prefs.putInt("minDay", progMinuteDay);
+      prefs.putFloat("tempDay", progTempDay);
+      prefs.putInt("hourNight", progHourNight);
+      prefs.putInt("minNight", progMinuteNight);
+      prefs.putFloat("tempNight", progTempNight);
+      prefs.end();
     }
   } else if (menuState == Wifi) {
     if (btnGauche.fell() && menuIndex > 0)   menuIndex--;
