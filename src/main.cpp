@@ -79,13 +79,13 @@ ScreenState menuState = Accueil;
 // 0=Accueil, 1=Date, 2=Temp, 3=Wifi, 4=Version
 int menuIndex = 0;
 
+// Variables date
+int day = 30, month = 12, year = 2025;
+int hour = 23, minute = 59;
+
 // Variables température
 float tempAct = 25.5;  // Température actuelle
 float tempCible = 25.0; // Température à atteindre
-
-// Variables date
-int day = 30, month = 12, year = 2025;
-int hour = 13, minute = 45;
 
 // Variable Prog Temp
 int progHourDay = 9;
@@ -96,6 +96,12 @@ int progMinuteNight = 0;
 float progTempNight = 20.5;
 int progHourDayTemp, progMinuteDayTemp, progHourNightTemp, progMinuteNightTemp;
 float progTempDayTemp, progTempNightTemp;
+
+// Variable forcage manuel de la température
+bool manualTemp = false;
+
+// Durée de transition (2h = 120 minutes)
+const int fadeDuration = 120;
 
 void setup() {
   Serial.begin(9600);
@@ -137,6 +143,8 @@ void setup() {
 
   // Initialisation du relais
   pinMode(PIN_RELAY, OUTPUT);
+  // Éteint le relais
+  digitalWrite(PIN_RELAY, LOW);
 
   // Initialisation du Wifi
   u8g2.clearBuffer();
@@ -322,6 +330,50 @@ void drawTemp() {
   if (menuIndex==6) drawArrow(88,57,11,4);
 }
 
+// Fonction interpolation en S (cosinus)
+float smoothStep(float startTemp, float endTemp, int startMinute, int endMinute, int nowMinute) {
+  // Cas avant/après la période
+  if (nowMinute <= startMinute) return startTemp;
+  if (nowMinute >= endMinute)   return endTemp;
+
+  float ratio = float(nowMinute - startMinute) / float(endMinute - startMinute);
+  float sCurve = (1 - cos(ratio * PI)) / 2.0; // courbe en S
+  return startTemp + sCurve * (endTemp - startTemp);
+}
+
+// Calcul de la température cible
+float getTempCible(DateTime now) {
+  int hour   = now.hour();
+  int minute = now.minute();
+  int minuteNow   = hour * 60 + minute;
+  int minuteDay   = progHourDay   * 60 + progMinuteDay;
+  int minuteNight = progHourNight * 60 + progMinuteNight;
+
+  // Cas normal (jour sans minuit)
+  if (minuteDay < minuteNight) {
+    if (minuteNow >= minuteDay && minuteNow < minuteNight) {
+      // On est en jour -> interpoler depuis la nuit
+      return smoothStep(progTempNight, progTempDay,
+                        minuteDay, minuteDay + fadeDuration, minuteNow);
+    } else {
+      // On est en nuit -> interpoler depuis le jour
+      return smoothStep(progTempDay, progTempNight,
+                        minuteNight, minuteNight + fadeDuration, minuteNow);
+    }
+  } else {
+    // Cas qui traverse minuit
+    if (minuteNow >= minuteDay || minuteNow < minuteNight) {
+      // Jour
+      return smoothStep(progTempNight, progTempDay,
+                        minuteDay, (minuteDay + fadeDuration) % (24*60), minuteNow);
+    } else {
+      // Nuit
+      return smoothStep(progTempDay, progTempNight,
+                        minuteNight, (minuteNight + fadeDuration) % (24*60), minuteNow);
+    }
+  }
+}
+
 // Fonction affichage programation wifi
 void drawWifi() {
   // dessiner le texte
@@ -343,7 +395,9 @@ void drawSave() {
 }
 
 // Fonction générique d’auto-repeat
-void handleRepeat(Bounce &btn, float &target, float step, unsigned long &pressedSince, unsigned long &lastRepeat) {
+// Retourne true si "target" a été modifiée
+bool handleRepeat(Bounce &btn, float &target, float step, unsigned long &pressedSince, unsigned long &lastRepeat) {
+  bool changed = false;
   unsigned long now = millis();
 
   if (btn.fell()) {
@@ -351,6 +405,7 @@ void handleRepeat(Bounce &btn, float &target, float step, unsigned long &pressed
     target += step;
     pressedSince = now;
     lastRepeat   = now;
+    changed = true;
   }
 
   if (btn.read() == LOW) { // Bouton maintenu
@@ -366,8 +421,10 @@ void handleRepeat(Bounce &btn, float &target, float step, unsigned long &pressed
     if (interval > 0 && now - lastRepeat >= interval) {
       target += step;
       lastRepeat = now;
+      changed = true;
     }
   }
+  return changed;
 }
 
 void handleRepeatInt(Bounce &btn, int &target, int minVal, int maxVal,
@@ -490,10 +547,14 @@ void loop() {
     day, month, hour, minute, now.second());
   Serial.println(date);
 
+  // Récupération de la température cible
+  //tempCible = getTempCible(rtc.now());
+  if (!manualTemp) tempCible = getTempCible(rtc.now());
+
   // Mise à jour de la tempéraure
   // Timer pour la température
   static unsigned long lastRequest = 0;
-  if (millis() - lastRequest > 1000) {  // toutes les 1s
+  if (millis() - lastRequest > 3000) {  // toutes les 3s
     ds.requestTemperatures(); 
     lastRequest = millis();
   }
@@ -502,6 +563,14 @@ void loop() {
     tempAct=66.6;
   } else {
     tempAct=t;
+  }
+
+  // Activation du chauffage
+  if (tempAct<tempCible)
+  {
+    digitalWrite(PIN_RELAY, HIGH);  // relais ON
+  } else {
+    digitalWrite(PIN_RELAY, LOW);   // relais OFF
   }
 
   // Récupération de la puissance du signal WiFi
@@ -526,10 +595,18 @@ void loop() {
       if (menuIndex == 0) menuIndex = 1;
     }
     // Ajustement température quand on est en Accueil
+    // Passe en manuel si la consigne change
     //if (btnHaut.fell()) tempCible += 0.1;
     //if (btnBas.fell())  tempCible -= 0.1;
-    handleRepeat(btnHaut, tempCible, +0.1, hautPressedSince, hautLastRepeat);
-    handleRepeat(btnBas,  tempCible, -0.1, basPressedSince,  basLastRepeat);
+    if (handleRepeat(btnHaut, tempCible, +0.1, hautPressedSince, hautLastRepeat)) {
+      manualTemp = true;
+    }
+    if (handleRepeat(btnBas,  tempCible, -0.1, basPressedSince,  basLastRepeat)) {
+      manualTemp = true;
+    }
+    if (btnGauche.fell()) {
+      manualTemp = false;
+    }
   } else if (menuState == Menu) {
     if (btnHaut.fell() && menuIndex > 1)   menuIndex--;
     if (btnBas.fell()  && menuIndex < 4)   menuIndex++;
@@ -685,14 +762,17 @@ void loop() {
     u8g2.drawStr(95, 64, tempStrCible);
     u8g2.setFont(u8g2_font_tiny5_tf);
     u8g2.drawStr(120, 59, "o");
+    // Affichage d'une icone cadenat si forcage manuel de la température
+    if (manualTemp) {
+      u8g2.setFont(u8g2_font_open_iconic_thing_1x_t);
+      u8g2.drawGlyph(86, 65, 0x004f);
+    }
 
+    // Affichage de l'icône de chauffage
     if (tempAct<tempCible)
     {
       u8g2.setFont(u8g2_font_open_iconic_embedded_2x_t);
       u8g2.drawGlyph(0, 64, 0x0043);
-      digitalWrite(PIN_RELAY, HIGH);  // relais ON
-    } else {
-      digitalWrite(PIN_RELAY, LOW);   // relais OFF
     }
 
     // Affichage du signal wifi
