@@ -62,9 +62,16 @@ const unsigned long delay2 = 2500;   // après 2500ms -> repeat rapide
 const unsigned long rate1  = 500;    // vitesse lente : 500ms
 const unsigned long rate2  = 50;    // vitesse rapide : 100ms
 
+// variable long press
+unsigned long droitePressedAt = 0;
+const unsigned long LONG_PRESS_MS = 2000;
+
 // Affichage non bloquant du message "Saved !"
 unsigned long saveMsgUntil = 0;                 // moment où on cesse l'affichage
 const unsigned long saveMsgDuration = 2000;     // durée d'affichage en ms
+
+// Parametre de Prise de température
+const unsigned long tempDelay = 1000; // toutes les 1s
 
 // Variables d'état du menu
 enum ScreenState {
@@ -78,6 +85,23 @@ enum ScreenState {
 ScreenState menuState = Accueil;
 // 0=Accueil, 1=Date, 2=Temp, 3=Wifi, 4=Version
 int menuIndex = 0;
+
+// Variables d'état du menu wifi
+enum WifiSubState {
+  WifiMain,
+  WifiScan,
+  WifiPassword,
+  WifiSave
+};
+WifiSubState wifiState = WifiMain;
+int wifiIndex = 0;          // index du menu ou du SSID sélectionné
+int wifiScroll = 0;         // pour défiler si beaucoup de SSID
+int wifiCount = 0;          // nombre de réseaux trouvés
+String selectedSSID = "";   // SSID choisi
+String customSSID = "";     // si "Custom"
+String wifiPass = "";       // mot de passe WPA en cours
+int charIndex = 0;          // index du caractère courant pour saisie pass
+const char charSet[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-*$&@";
 
 // Variables date
 int day = 30, month = 12, year = 2025;
@@ -211,6 +235,11 @@ void drawArrow (int x, int y, int fontSize, int nbCharacter) {
   	//y = y - 15;
   	y_margeHaut = -15;
   	y_margeBas = 3;
+  } else if (fontSize==8) {
+  	x = x + 3;
+  	//y = y - 15;
+  	y_margeHaut = -12;
+  	y_margeBas = 5;
   } else {
   	x = x + 9 * ( nbCharacter / 2 );
   	//y = y - 15;
@@ -376,9 +405,64 @@ float getTempCible(DateTime now) {
 
 // Fonction affichage programation wifi
 void drawWifi() {
-  // dessiner le texte
-  u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
-  u8g2.drawStr(2, 30, "WifiProg");
+  if (wifiState == WifiMain) {
+    const char* items[] = {"SSID", "WPA", "Save"};
+    for (int i = 0; i < 3; i++) {
+      int y = 20 + i*15;
+      if (menuIndex == i+1 ) {
+        u8g2.drawBox(0, y-12, 128, 14);
+        u8g2.setDrawColor(0);
+      } else {
+        u8g2.setDrawColor(1);
+      }
+      u8g2.drawStr(2, y, items[i]);
+      u8g2.setDrawColor(1);
+    }
+  }
+
+  else if (wifiState == WifiScan) {
+    u8g2.setFont(u8g2_font_fub11_tr);
+    u8g2.drawStr(0, 10, "Reseaux:");
+    for (int i = 0; i < 4 && (i+wifiScroll) < wifiCount; i++) {
+      int idx = i + wifiScroll;
+      int y = 25 + i*12;
+      if (idx == wifiIndex) {
+        u8g2.drawBox(0, y-10, 128, 12);
+        u8g2.setDrawColor(0);
+      } else {
+        u8g2.setDrawColor(1);
+      }
+      u8g2.drawStr(2, y, WiFi.SSID(idx).c_str());
+      u8g2.setDrawColor(1);
+    }
+    if (wifiIndex == wifiCount) { // custom
+      u8g2.drawStr(2, 60, "> Custom...");
+    }
+  }
+
+  else if (wifiState == WifiPassword) {
+    u8g2.setFont(u8g2_font_fub11_tr);
+    u8g2.drawStr(13, 11, "WPAssword:");
+    u8g2.setFont(u8g2_font_ncenB08_tf);
+    //String masked = "";
+    //for (int i = 0; i < wifiPass.length(); i++) masked += "*";
+    //u8g2.drawStr(0, 30, masked.c_str());
+
+    char current[2] = { charSet[charIndex], 0 };
+    // u8g2.getStrWidth(wifiPass.c_str() pour connaitre la position de la taille de la chaine
+    int large=10;
+    // Si l'écran est plus grand que le texte
+    if (u8g2.getStrWidth(wifiPass.c_str()) < 128-large) {
+      u8g2.drawStr(0, 39, wifiPass.c_str());
+      u8g2.drawStr(u8g2.getStrWidth(wifiPass.c_str())+1, 39, current);
+      drawArrow(u8g2.getStrWidth(wifiPass.c_str())+1,39,8,1);
+    } else {
+      int x=u8g2.getStrWidth(wifiPass.c_str());
+      u8g2.drawStr(128-1-x-large, 39, wifiPass.c_str());
+      u8g2.drawStr(128-large, 39, current);
+      drawArrow(128-large,39,8,1);
+    }
+  }
 }
 
 // Fonction affichage version
@@ -545,7 +629,6 @@ void loop() {
   }
   sprintf(date, "%02d/%02d %02d:%02d:%02d",
     day, month, hour, minute, now.second());
-  Serial.println(date);
 
   // Récupération de la température cible
   //tempCible = getTempCible(rtc.now());
@@ -554,7 +637,7 @@ void loop() {
   // Mise à jour de la tempéraure
   // Timer pour la température
   static unsigned long lastRequest = 0;
-  if (millis() - lastRequest > 3000) {  // toutes les 3s
+  if (millis() - lastRequest > tempDelay) {
     ds.requestTemperatures(); 
     lastRequest = millis();
   }
@@ -631,6 +714,7 @@ void loop() {
     if (btnDroite.fell() && menuIndex == 3) {
       menuState = Wifi;
       menuIndex = 1;
+      wifiState = WifiMain;
     }
     if (btnDroite.fell() && menuIndex == 4) {
       menuState = Version;
@@ -723,11 +807,82 @@ void loop() {
       prefs.end();
     }
   } else if (menuState == Wifi) {
-    if (btnGauche.fell() && menuIndex > 0)   menuIndex--;
-    if (btnDroite.fell()  && menuIndex < 1)   menuIndex++;
-    if (menuIndex == 0) {
-      menuState = Menu;
-      menuIndex = 3;
+    if (wifiState == WifiMain){
+      if (btnHaut.fell() && menuIndex > 1)   menuIndex--;
+      if (btnBas.fell()  && menuIndex < 3)   menuIndex++;
+      if (btnGauche.fell()) {
+        menuState = Menu;
+        menuIndex = 3;
+      }
+      if (menuIndex == 1 && btnDroite.fell()) {
+        wifiState = WifiScan;
+        wifiCount = WiFi.scanNetworks();
+        wifiIndex = 0;
+        wifiScroll = 0;
+      }
+      if (menuIndex == 2 && btnDroite.fell()) {
+        wifiState = WifiPassword;
+      }
+      if (menuIndex == 3 && btnDroite.fell()) {
+        drawSave();
+        menuState = Accueil;
+        menuIndex = 0;
+      }
+    } else if (wifiState == WifiScan) {
+      if (btnGauche.fell()) {
+        wifiState = WifiMain;
+        menuIndex = 1;
+      }
+      if (btnHaut.fell() && wifiIndex > 0) wifiIndex--;
+      if (btnBas.fell() && wifiIndex < wifiCount) wifiIndex++;
+      if (btnDroite.fell()) {
+        if (wifiIndex < wifiCount) {
+          selectedSSID = WiFi.SSID(wifiIndex);
+          wifiState = WifiMain;
+        } else {
+          // Custom
+          selectedSSID = "";
+          customSSID = "";
+          wifiState = WifiPassword;
+        }
+      }
+    } else if (wifiState == WifiPassword) {
+      int nChars = sizeof(charSet) - 1; // nombre de caractères dispo
+      handleRepeatInt(btnHaut, charIndex, 0, nChars-1, +1, hautPressedSince, hautLastRepeat);
+      handleRepeatInt(btnBas,  charIndex, 0, nChars-1, -1, basPressedSince,  basLastRepeat);
+      // if (btnHaut.fell()) {
+      //   charIndex = (charIndex+1) % (sizeof(charSet)-1);
+      // }
+      // if (btnBas.fell()) {
+      //   charIndex = (charIndex-1 + (sizeof(charSet)-1)) % (sizeof(charSet)-1);
+      // }
+      if (btnGauche.fell()) {
+        if (wifiPass.length() > 0) wifiPass.remove(wifiPass.length()-1);
+        else {
+          wifiState = WifiMain; // sortie
+          menuIndex = 2;
+        }
+      }
+      // Déclanchement du chrono à l'appuie
+      if (btnDroite.fell()) {
+        droitePressedAt = millis();
+      }
+      // Gestion du court appui
+      if (btnDroite.rose()) {  // relaché
+        // Si relâché avant 2s → appui court
+        if (droitePressedAt != 0) {
+          wifiPass += charSet[charIndex]; // Ajjout du character
+          droitePressedAt = 0; // Reset pour éviter répétition
+        }
+      }
+      // Gestion du long appui
+      if (btnDroite.read() == LOW && droitePressedAt != 0) {
+        if (millis() - droitePressedAt >= LONG_PRESS_MS) {
+          droitePressedAt = 0;       // Reset pour éviter répétition
+          wifiState = WifiMain; // sortie directe après 2s d'appui
+          menuIndex = 2;
+        }
+      }
     }
   } else if (menuState == Version) {
     if (btnGauche.fell() && menuIndex > 0)   menuIndex--;

@@ -27,7 +27,7 @@
   static const int PIN_BTN_GAUCHE= 10;
   static const int PIN_BTN_HAUT  = 20;
   static const int PIN_BTN_DROITE= 21;
-  static const int PIN_RELAY     = D7;
+  static const int PIN_RELAY     = 5;
   static const int PIN_ONEWIRE   = 2; // DS18B20
   // Utilisation du constructeur SH1106 pour ton clone
   U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
