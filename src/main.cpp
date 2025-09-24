@@ -12,6 +12,7 @@
 #include <HTTPUpdate.h>
 #include <ArduinoJson.h>
 #include "pins.h"
+#include <regex>
 
 //Broches + Screen centralisées dans include/pins.h
 // Utilisation du constructeur SH1106 pour ton clone
@@ -115,8 +116,8 @@ bool manualTemp = false;
 const int fadeDuration = 120;
 
 // Update
-const char* currentVersion = "0.2";
-const char* manifestURL = "https://raw.githubusercontent.com/djfab59/ESP32-C3-Tapis-Chauffant/refs/heads/master/release/firmware-0.1.bin/version.json";
+const char* currentVersion = "0.1";
+const char* manifestURL = "https://raw.githubusercontent.com/djfab59/ESP32-C3-Tapis-Chauffant/refs/heads/master/release/version.json";
 
 void setup() {
   Serial.begin(9600);
@@ -489,6 +490,74 @@ void drawWifi() {
   }
 }
 
+void testIp() {
+  HTTPClient http;
+  if (!http.begin("http://monip.org")) {
+    Serial.println("Impossible d'init HTTP");
+    return;
+  }
+
+  int httpCode = http.GET();
+  if (httpCode == 200) {
+    String payload = http.getString();
+    http.end();
+
+    // --- extraction IP avec regex ---
+    std::regex ipRegex("\\b([0-9]{1,3}\\.){3}[0-9]{1,3}\\b");
+    std::smatch match;
+    std::string sPayload = payload.c_str();
+
+    if (std::regex_search(sPayload, match, ipRegex)) {
+      String ip = match.str().c_str();
+      Serial.printf("IP publique : %s\n", ip.c_str());
+    } else {
+      Serial.println("Impossible d'extraire l'IP publique");
+    }
+  } else {
+    Serial.printf("Erreur HTTP %d\n", httpCode);
+    http.end();
+  }
+}
+
+void testIp2() {
+  WiFiClientSecure client;
+  client.setInsecure();  // ⚠️ comme curl -k → accepte tout certificat
+
+  HTTPClient https;
+  //if (!https.begin(client, "https://api.ipify.org?format=json")) {
+  //if (!https.begin(client, "https://api.ipify.org")) {
+  if (!https.begin(client, "https://api.ipify.org/?format=json")) {
+    Serial.println("Impossible d'init HTTPS");
+    return;
+  }
+
+  int httpCode = https.GET();
+  if (httpCode == 200) {
+    String payload = https.getString();
+    https.end();
+
+    // --- Parsing JSON ---
+    JsonDocument doc;
+    //doc.capacity(256);  // suffisant pour {"ip":"x.x.x.x"}
+
+    DeserializationError err = deserializeJson(doc, payload);
+    if (err) {
+      Serial.printf("Erreur JSON: %s\n", err.c_str());
+      return;
+    }
+
+    String ip = doc["ip"] | "";
+    if (ip.length()) {
+      Serial.printf("IP publique : %s\n", ip.c_str());
+    } else {
+      Serial.println("Clé 'ip' absente du JSON");
+    }
+  } else {
+    Serial.printf("Erreur HTTP %d\n", httpCode);
+    https.end();
+  }
+}
+
 // Fonction pour vérifier les mises à jour
 void checkUpdate() {
   WiFiClientSecure client;
@@ -562,6 +631,8 @@ void drawVersion() {
   u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
   u8g2.drawStr(2, 30, "Version");
   checkUpdate();
+  //testIp();
+  //testIp2();
 }
 
 // Fonction affichage version
