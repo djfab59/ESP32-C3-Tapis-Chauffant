@@ -574,7 +574,9 @@ void checkUpdate() {
     String payload = https.getString();
     https.end();
 
-    // ✅ ArduinoJson: document statique (manifest < 1024 o)
+    // --- Parsing JSON ---
+    //JsonDocument doc;
+    //doc.capacity(1024); 
     StaticJsonDocument<1024> doc;
 
     DeserializationError err = deserializeJson(doc, payload);
