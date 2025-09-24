@@ -360,8 +360,8 @@ void drawTemp() {
 // Fonction interpolation en S (cosinus)
 float smoothStep(float startTemp, float endTemp, int startMinute, int endMinute, int nowMinute) {
   // Cas avant/après la période
-  if (nowMinute <= startMinute) return startTemp;
-  if (nowMinute >= endMinute)   return endTemp;
+  if (nowMinute < startMinute) return endTemp;
+  if (nowMinute > endMinute)   return endTemp;
 
   float ratio = float(nowMinute - startMinute) / float(endMinute - startMinute);
   float sCurve = (1 - cos(ratio * PI)) / 2.0; // courbe en S
