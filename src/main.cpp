@@ -2,24 +2,16 @@
 #include <Wire.h>
 #include <Bounce2.h>
 #include <DallasTemperature.h>
-#include <WiFi.h>
 #include <ArduinoOTA.h>
 #include <RTClib.h>
 #include <cstring>
 #include <Preferences.h>
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+#include <HTTPUpdate.h>
+#include <ArduinoJson.h>
 #include "pins.h"
-
-#if __has_include("secrets.h")
-#include "secrets.h"
-#endif
-
-#ifndef WIFI_SSID
-#define WIFI_SSID ""
-#endif
-
-#ifndef WIFI_PASSWORD
-#define WIFI_PASSWORD ""
-#endif
 
 //Broches + Screen centralisées dans include/pins.h
 // Utilisation du constructeur SH1106 pour ton clone
@@ -28,10 +20,6 @@
 
 // Save
 Preferences prefs;
-
-// Wifi
-static const char* ssid = WIFI_SSID;
-static const char* password = WIFI_PASSWORD;
 
 // RTC
 RTC_DS3231 rtc;
@@ -96,8 +84,9 @@ enum WifiSubState {
 };
 WifiSubState wifiState = WifiMain;
 int wifiCount = 0;          // nombre de réseaux trouvés
-String wifiSSID = "";     // si "Custom"
-String wifiPass = "";       // mot de passe WPA en cours
+String wifiSSID = "Wokwi-GUEST";
+String wifiPass = "";
+String wifiSSIDTemp, wifiPassTemp;
 int charIndex = 0;          // index du caractère courant pour saisie pass
 const char charSet[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-*$&@";
 
@@ -125,6 +114,10 @@ bool manualTemp = false;
 // Durée de transition (2h = 120 minutes)
 const int fadeDuration = 120;
 
+// Update
+const char* currentVersion = "0.2";
+const char* manifestURL = "https://raw.githubusercontent.com/djfab59/ESP32-C3-Tapis-Chauffant/refs/heads/master/release/firmware-0.1.bin/version.json";
+
 void setup() {
   Serial.begin(9600);
   Serial.print("Setup!");
@@ -139,6 +132,12 @@ void setup() {
   progHourNight   = prefs.getInt("hourNight",   progHourNight);
   progMinuteNight = prefs.getInt("minNight",    progMinuteNight);
   progTempNight   = prefs.getFloat("tempNight", progTempNight);
+  // Ferme les préférences
+  prefs.end();
+  prefs.begin("wifi", true);
+  // Récupère les valeurs stockées, sinon met la valeur par défaut
+  wifiSSID = prefs.getString("wifiSSID", wifiSSID);
+  wifiPass = prefs.getString("wifiPass", wifiPass);
   // Ferme les préférences
   prefs.end();
 
@@ -171,27 +170,23 @@ void setup() {
   // Initialisation du Wifi
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_ncenB08_tr);
-  if (std::strlen(ssid) > 0) {
-    u8g2.drawStr(0, 8, "Wifi connecting...");
-    WiFi.begin(ssid, password);
-    unsigned long startAttemptTime = millis();
-    int x = 0;
-    // Attendre au max 10 secondes
-    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
-      delay(500);
-      u8g2.drawStr(x, 16, ".");
-      u8g2.sendBuffer();
-      x = x + 6;
-    }
-    u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_ncenB08_tr);
-    if (WiFi.status() == WL_CONNECTED) {
-      u8g2.drawStr(0, 24, "Wifi connected!!!");
-    } else {
-      u8g2.drawStr(0, 24, "Wifi failed (timeout)");
-    }
+  u8g2.drawStr(0, 8, "Wifi connecting...");
+  WiFi.begin(wifiSSID, wifiPass);
+  unsigned long startAttemptTime = millis();
+  int x = 0;
+  // Attendre au max 10 secondes
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
+    delay(500);
+    u8g2.drawStr(x, 16, ".");
+    u8g2.sendBuffer();
+    x = x + 6;
+  }
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_ncenB08_tr);
+  if (WiFi.status() == WL_CONNECTED) {
+    u8g2.drawStr(0, 24, "Wifi connected!!!");
   } else {
-    u8g2.drawStr(0, 24, "Wifi disabled (no creds)");
+    u8g2.drawStr(0, 24, "Wifi failed (timeout)");
   }
   u8g2.sendBuffer();
   delay(1000);
@@ -461,41 +456,103 @@ void drawWifi() {
     // u8g2.getStrWidth(wifiSSID.c_str() pour connaitre la position de la taille de la chaine
     int large=10;
     // Si l'écran est plus grand que le texte
-    if (u8g2.getStrWidth(wifiSSID.c_str()) < 128-large) {
-      u8g2.drawStr(0, 39, wifiSSID.c_str());
-      u8g2.drawStr(u8g2.getStrWidth(wifiSSID.c_str())+1, 39, current);
-      drawArrow(u8g2.getStrWidth(wifiSSID.c_str())+1,39,8,1);
+    if (u8g2.getStrWidth(wifiSSIDTemp.c_str()) < 128-large) {
+      u8g2.drawStr(0, 39, wifiSSIDTemp.c_str());
+      u8g2.drawStr(u8g2.getStrWidth(wifiSSIDTemp.c_str())+1, 39, current);
+      drawArrow(u8g2.getStrWidth(wifiSSIDTemp.c_str())+1,39,8,1);
     } else {
-      int x=u8g2.getStrWidth(wifiSSID.c_str());
-      u8g2.drawStr(128-1-x-large, 39, wifiSSID.c_str());
+      int x=u8g2.getStrWidth(wifiSSIDTemp.c_str());
+      u8g2.drawStr(128-1-x-large, 39, wifiSSIDTemp.c_str());
       u8g2.drawStr(128-large, 39, current);
       drawArrow(128-large,39,8,1);
     }
   }
-  
 
   else if (wifiState == WifiPassword) {
     u8g2.setFont(u8g2_font_fub11_tr);
     u8g2.drawStr(13, 11, "WPAssword:");
     u8g2.setFont(u8g2_font_ncenB08_tf);
-    //String masked = "";
-    //for (int i = 0; i < wifiPass.length(); i++) masked += "*";
-    //u8g2.drawStr(0, 30, masked.c_str());
 
     char current[2] = { charSet[charIndex], 0 };
-    // u8g2.getStrWidth(wifiPass.c_str() pour connaitre la position de la taille de la chaine
     int large=10;
     // Si l'écran est plus grand que le texte
-    if (u8g2.getStrWidth(wifiPass.c_str()) < 128-large) {
-      u8g2.drawStr(0, 39, wifiPass.c_str());
-      u8g2.drawStr(u8g2.getStrWidth(wifiPass.c_str())+1, 39, current);
-      drawArrow(u8g2.getStrWidth(wifiPass.c_str())+1,39,8,1);
+    if (u8g2.getStrWidth(wifiPassTemp.c_str()) < 128-large) {
+      u8g2.drawStr(0, 39, wifiPassTemp.c_str());
+      u8g2.drawStr(u8g2.getStrWidth(wifiPassTemp.c_str())+1, 39, current);
+      drawArrow(u8g2.getStrWidth(wifiPassTemp.c_str())+1,39,8,1);
     } else {
-      int x=u8g2.getStrWidth(wifiPass.c_str());
-      u8g2.drawStr(128-1-x-large, 39, wifiPass.c_str());
+      int x=u8g2.getStrWidth(wifiPassTemp.c_str());
+      u8g2.drawStr(128-1-x-large, 39, wifiPassTemp.c_str());
       u8g2.drawStr(128-large, 39, current);
       drawArrow(128-large,39,8,1);
     }
+  }
+}
+
+// Fonction pour vérifier les mises à jour
+void checkUpdate() {
+  WiFiClientSecure client;
+  client.setInsecure();  // ⚠️ équivalent curl -k (pas de vérification TLS)
+
+  HTTPClient https;
+  if (!https.begin(client, manifestURL)) {
+    Serial.println("Impossible d'init la connexion HTTPS");
+    return;
+  }
+
+  int httpCode = https.GET();
+  if (httpCode == 200) {
+    String payload = https.getString();
+    https.end();
+
+    // ✅ ArduinoJson: document statique (manifest < 1024 o)
+    StaticJsonDocument<1024> doc;
+
+    DeserializationError err = deserializeJson(doc, payload);
+    if (err) {
+      Serial.printf("Erreur JSON: %s\n", err.c_str());
+      return;
+    }
+
+    String latest   = doc["latest"]   | "";
+    String rollback = doc["rollback"] | "";
+    String latestURL = doc["firmwares"][latest]["url"] | "";
+
+    if (latest.length() == 0 || latestURL.length() == 0) {
+      Serial.println("Manifest JSON incomplet !");
+      return;
+    }
+
+    if (latest != currentVersion) {
+      Serial.printf("Nouvelle version %s dispo, mise à jour...\n", latest.c_str());
+
+      t_httpUpdate_return ret = httpUpdate.update(client, latestURL);
+      switch (ret) {
+        case HTTP_UPDATE_FAILED:
+          Serial.printf("Echec update: %s\n", httpUpdate.getLastErrorString().c_str());
+          if (rollback.length()) {
+            String rollbackURL = doc["firmwares"][rollback]["url"] | "";
+            if (rollbackURL.length()) {
+              Serial.println("Tentative rollback...");
+              httpUpdate.update(client, rollbackURL);
+            }
+          }
+          break;
+
+        case HTTP_UPDATE_NO_UPDATES:
+          Serial.println("Pas de mise à jour.");
+          break;
+
+        case HTTP_UPDATE_OK:
+          Serial.println("Update réussie !");
+          break;
+      }
+    } else {
+      Serial.println("Firmware déjà à jour.");
+    }
+  } else {
+    Serial.printf("Erreur HTTP %d\n", httpCode);
+    https.end();
   }
 }
 
@@ -504,6 +561,7 @@ void drawVersion() {
   // dessiner le texte
   u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
   u8g2.drawStr(2, 30, "Version");
+  checkUpdate();
 }
 
 // Fonction affichage version
@@ -621,7 +679,7 @@ void drawWiFiIcon(U8G2 &u8g2, int x, int y, long rssi) {
   }
 }
 
-void handleWiFiReconnect(const char* ssid, const char* password) {
+void handleWiFiReconnect(String ssid, String password) {
   static unsigned long wifiRetryTimer = 0;
 
   if (WiFi.status() != WL_CONNECTED) {
@@ -646,7 +704,7 @@ void loop() {
   ArduinoOTA.handle();
 
   // Vérifier/reconnecter le WiFi si besoin
-  handleWiFiReconnect(ssid, password);
+  handleWiFiReconnect(wifiSSID, wifiPass);
 
   // Récupération de la date et de l'heure
   char date[30];
@@ -864,9 +922,16 @@ void loop() {
         wifiState = WifiPassword;
       }
       if (menuIndex == 4 && btnDroite.fell()) {
-        drawSave();
+        wifiSSID = wifiSSIDTemp;
+        wifiPass = wifiPassTemp;
+        // Sauvegarde dans les préférences
+        prefs.begin("wifi", false);
+        prefs.putString("wifiSSID", wifiSSID);
+        prefs.putString("wifiPass", wifiPass);
+        prefs.end();
         menuState = Accueil;
         menuIndex = 0;
+        drawSave();
       }
     } else if (wifiState == WifiScan) {
       if (btnGauche.fell()) {
@@ -876,7 +941,7 @@ void loop() {
       if (btnHaut.fell() && menuIndex > 0) menuIndex--;
       if (btnBas.fell() && menuIndex < wifiCount-1) menuIndex++;
       if (btnDroite.fell()) {
-        wifiSSID = WiFi.SSID(menuIndex);
+        wifiSSIDTemp = WiFi.SSID(menuIndex);
         wifiState = WifiMain;
         menuIndex = 3;
       }
@@ -885,7 +950,7 @@ void loop() {
       handleRepeatInt(btnHaut, charIndex, 0, nChars-1, +1, hautPressedSince, hautLastRepeat);
       handleRepeatInt(btnBas,  charIndex, 0, nChars-1, -1, basPressedSince,  basLastRepeat);
       if (btnGauche.fell()) {
-        if (wifiSSID.length() > 0) wifiSSID.remove(wifiSSID.length()-1);
+        if (wifiSSIDTemp.length() > 0) wifiSSIDTemp.remove(wifiSSIDTemp.length()-1);
         else {
           wifiState = WifiMain; // sortie
           menuIndex = 2;
@@ -899,7 +964,7 @@ void loop() {
       if (btnDroite.rose()) {  // relaché
         // Si relâché avant 2s → appui court
         if (droitePressedAt != 0) {
-          wifiSSID += charSet[charIndex]; // Ajjout du character
+          wifiSSIDTemp += charSet[charIndex]; // Ajjout du character
           droitePressedAt = 0; // Reset pour éviter répétition
         }
       }
@@ -915,14 +980,8 @@ void loop() {
       int nChars = sizeof(charSet) - 1; // nombre de caractères dispo
       handleRepeatInt(btnHaut, charIndex, 0, nChars-1, +1, hautPressedSince, hautLastRepeat);
       handleRepeatInt(btnBas,  charIndex, 0, nChars-1, -1, basPressedSince,  basLastRepeat);
-      // if (btnHaut.fell()) {
-      //   charIndex = (charIndex+1) % (sizeof(charSet)-1);
-      // }
-      // if (btnBas.fell()) {
-      //   charIndex = (charIndex-1 + (sizeof(charSet)-1)) % (sizeof(charSet)-1);
-      // }
       if (btnGauche.fell()) {
-        if (wifiPass.length() > 0) wifiPass.remove(wifiPass.length()-1);
+        if (wifiPassTemp.length() > 0) wifiPassTemp.remove(wifiPassTemp.length()-1);
         else {
           wifiState = WifiMain; // sortie
           menuIndex = 3;
@@ -936,7 +995,7 @@ void loop() {
       if (btnDroite.rose()) {  // relaché
         // Si relâché avant 2s → appui court
         if (droitePressedAt != 0) {
-          wifiPass += charSet[charIndex]; // Ajjout du character
+          wifiPassTemp += charSet[charIndex]; // Ajjout du character
           droitePressedAt = 0; // Reset pour éviter répétition
         }
       }
