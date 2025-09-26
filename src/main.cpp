@@ -91,6 +91,17 @@ String wifiSSIDTemp, wifiPassTemp;
 int charIndex = 0;          // index du caractère courant pour saisie pass
 const char charSet[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-*$&@";
 
+// Variables d'état du menu version
+enum VersionSubState {
+  VersionMain,
+  VersionCheck,
+  VersionUpdate,
+  VersionUpgrade
+};
+VersionSubState versionState = VersionMain;
+const char* currentVersion = "0.1";
+const char* manifestURL = "https://raw.githubusercontent.com/djfab59/ESP32-C3-Tapis-Chauffant/refs/heads/master/release/version.json";
+
 // Variables date
 int day = 30, month = 12, year = 2025;
 int hour = 23, minute = 59;
@@ -114,10 +125,6 @@ bool manualTemp = false;
 
 // Durée de transition (2h = 120 minutes)
 const int fadeDuration = 120;
-
-// Update
-const char* currentVersion = "0.1";
-const char* manifestURL = "https://raw.githubusercontent.com/djfab59/ESP32-C3-Tapis-Chauffant/refs/heads/master/release/version.json";
 
 void setup() {
   Serial.begin(9600);
@@ -490,83 +497,15 @@ void drawWifi() {
   }
 }
 
-void testIp() {
-  HTTPClient http;
-  if (!http.begin("http://monip.org")) {
-    Serial.println("Impossible d'init HTTP");
-    return;
-  }
-
-  int httpCode = http.GET();
-  if (httpCode == 200) {
-    String payload = http.getString();
-    http.end();
-
-    // --- extraction IP avec regex ---
-    std::regex ipRegex("\\b([0-9]{1,3}\\.){3}[0-9]{1,3}\\b");
-    std::smatch match;
-    std::string sPayload = payload.c_str();
-
-    if (std::regex_search(sPayload, match, ipRegex)) {
-      String ip = match.str().c_str();
-      Serial.printf("IP publique : %s\n", ip.c_str());
-    } else {
-      Serial.println("Impossible d'extraire l'IP publique");
-    }
-  } else {
-    Serial.printf("Erreur HTTP %d\n", httpCode);
-    http.end();
-  }
-}
-
-void testIp2() {
-  WiFiClientSecure client;
-  client.setInsecure();  // ⚠️ comme curl -k → accepte tout certificat
-
-  HTTPClient https;
-  //if (!https.begin(client, "https://api.ipify.org?format=json")) {
-  //if (!https.begin(client, "https://api.ipify.org")) {
-  if (!https.begin(client, "https://api.ipify.org/?format=json")) {
-    Serial.println("Impossible d'init HTTPS");
-    return;
-  }
-
-  int httpCode = https.GET();
-  if (httpCode == 200) {
-    String payload = https.getString();
-    https.end();
-
-    // --- Parsing JSON ---
-    JsonDocument doc;
-    //doc.capacity(256);  // suffisant pour {"ip":"x.x.x.x"}
-
-    DeserializationError err = deserializeJson(doc, payload);
-    if (err) {
-      Serial.printf("Erreur JSON: %s\n", err.c_str());
-      return;
-    }
-
-    String ip = doc["ip"] | "";
-    if (ip.length()) {
-      Serial.printf("IP publique : %s\n", ip.c_str());
-    } else {
-      Serial.println("Clé 'ip' absente du JSON");
-    }
-  } else {
-    Serial.printf("Erreur HTTP %d\n", httpCode);
-    https.end();
-  }
-}
-
 // Fonction pour vérifier les mises à jour
-void checkUpdate() {
+String checkUpdate() {
   WiFiClientSecure client;
-  client.setInsecure();  // ⚠️ équivalent curl -k (pas de vérification TLS)
+  client.setInsecure();  // pas de vérification TLS
 
   HTTPClient https;
   if (!https.begin(client, manifestURL)) {
-    Serial.println("Impossible d'init la connexion HTTPS");
-    return;
+    u8g2.drawStr(0, 64, "NO HTTP Access !!!");
+    return "ERROR";
   }
 
   int httpCode = https.GET();
@@ -581,8 +520,8 @@ void checkUpdate() {
 
     DeserializationError err = deserializeJson(doc, payload);
     if (err) {
-      Serial.printf("Erreur JSON: %s\n", err.c_str());
-      return;
+      u8g2.drawStr(0, 64, "JSON Error !!!");
+      return "ERROR";
     }
 
     String latest   = doc["latest"]   | "";
@@ -590,51 +529,103 @@ void checkUpdate() {
     String latestURL = doc["firmwares"][latest]["url"] | "";
 
     if (latest.length() == 0 || latestURL.length() == 0) {
-      Serial.println("Manifest JSON incomplet !");
-      return;
+      u8g2.drawStr(0, 64, "JSON Incomplete !!!");
+      return "ERROR";
     }
 
     if (latest != currentVersion) {
       Serial.printf("Nouvelle version %s dispo, mise à jour...\n", latest.c_str());
-
-      t_httpUpdate_return ret = httpUpdate.update(client, latestURL);
-      switch (ret) {
-        case HTTP_UPDATE_FAILED:
-          Serial.printf("Echec update: %s\n", httpUpdate.getLastErrorString().c_str());
-          if (rollback.length()) {
-            String rollbackURL = doc["firmwares"][rollback]["url"] | "";
-            if (rollbackURL.length()) {
-              Serial.println("Tentative rollback...");
-              httpUpdate.update(client, rollbackURL);
-            }
-          }
-          break;
-
-        case HTTP_UPDATE_NO_UPDATES:
-          Serial.println("Pas de mise à jour.");
-          break;
-
-        case HTTP_UPDATE_OK:
-          Serial.println("Update réussie !");
-          break;
-      }
+      u8g2.drawStr(0, 64, "Update Needed");
+      return "UPDATENEED";
     } else {
       Serial.println("Firmware déjà à jour.");
+      u8g2.drawStr(0, 64, "Up to date");
+      return "UPTODATE";
     }
   } else {
     Serial.printf("Erreur HTTP %d\n", httpCode);
     https.end();
+    u8g2.drawStr(0, 64, "HTTP Error !!!");
+    return "ERROR";
   }
 }
+
+// // Mise à jour
+// void upgrade(){
+//   if (latest != currentVersion) {
+//     Serial.printf("Nouvelle version %s dispo, mise à jour...\n", latest.c_str());
+
+//     t_httpUpdate_return ret = httpUpdate.update(client, latestURL);
+//     switch (ret) {
+//       case HTTP_UPDATE_FAILED:
+//         Serial.printf("Echec update: %s\n", httpUpdate.getLastErrorString().c_str());
+//         if (rollback.length()) {
+//           String rollbackURL = doc["firmwares"][rollback]["url"] | "";
+//           if (rollbackURL.length()) {
+//             Serial.println("Tentative rollback...");
+//             httpUpdate.update(client, rollbackURL);            }
+//           }
+//         break;
+
+//       case HTTP_UPDATE_NO_UPDATES:
+//         Serial.println("Pas de mise à jour.");
+//         break;
+
+//       case HTTP_UPDATE_OK:
+//         Serial.println("Update réussie !");
+//         break;
+//     }
+//   } else {
+//     Serial.println("Firmware déjà à jour.");
+//   }
+// }
 
 // Fonction affichage version
 void drawVersion() {
   // dessiner le texte
   u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
-  u8g2.drawStr(2, 30, "Version");
-  checkUpdate();
-  //testIp();
-  //testIp2();
+  u8g2.drawStr(20, 11, "Firmware");
+  u8g2.drawStr(2, 25, "Version:");
+  u8g2.drawStr(72, 25, currentVersion);
+
+  if (WiFi.status() == WL_CONNECTED){
+    if (versionState == VersionMain){
+      u8g2.drawBox(0, 26, 128, 13);
+      u8g2.setDrawColor(0);
+    }
+    u8g2.drawStr(2, 38, "Check update");
+    u8g2.setDrawColor(1);
+
+    if (versionState == VersionCheck){
+      //u8g2.setDrawColor(0);
+      //u8g2.drawBox(0, 64, 128, 39);
+      //u8g2.setDrawColor(1);
+      u8g2.drawStr(2, 51, "Wait ...");
+      u8g2.sendBuffer();
+      String result = checkUpdate();
+      u8g2.sendBuffer();
+      if (result == "UPDATENEED"){
+        u8g2.setDrawColor(0);
+        u8g2.drawBox(0, 49, 128, 11);
+        u8g2.setDrawColor(1);
+        u8g2.drawStr(2, 49, "Need Update");
+        versionState = VersionUpdate;
+      } else {
+        Serial.print("OTHER.");
+        versionState = VersionMain;
+        sleep(2);
+      }
+    }
+    if (versionState == VersionUpdate){
+      u8g2.setDrawColor(0);
+      u8g2.drawBox(0, 39, 128, 25);
+      u8g2.setDrawColor(1);
+      u8g2.drawBox(0, 39, 128, 13);
+      u8g2.setDrawColor(0);
+      u8g2.drawStr(2, 51, "Upgrade");
+      u8g2.setDrawColor(1);
+    }    
+  }
 }
 
 // Fonction affichage version
@@ -884,6 +875,7 @@ void loop() {
     if (btnDroite.fell() && menuIndex == 4) {
       menuState = Version;
       menuIndex = 1;
+      versionState = VersionMain;
     }
   } else if (menuState == Date) {
     if (btnGauche.fell() && menuIndex > 0)   menuIndex--;
@@ -1083,10 +1075,16 @@ void loop() {
     }
   } else if (menuState == Version) {
     if (btnGauche.fell() && menuIndex > 0)   menuIndex--;
-    if (btnDroite.fell()  && menuIndex < 1)   menuIndex++;
+    //if (btnBas.fell()  && menuIndex < 1)   menuIndex++;
     if (menuIndex == 0) {
       menuState = Menu;
       menuIndex = 4;
+    }
+    if (btnDroite.fell() && versionState == VersionMain){
+      versionState = VersionCheck;
+    }
+    if (btnDroite.fell() && versionState == VersionUpdate){
+      versionState = VersionUpgrade;
     }
   }
 
