@@ -99,8 +99,10 @@ enum VersionSubState {
   VersionUpgrade
 };
 VersionSubState versionState = VersionMain;
+String latestVersion = "";
+String latestmd5 = "";
 const char* currentVersion = "0.1";
-const char* manifestURL = "https://raw.githubusercontent.com/djfab59/ESP32-C3-Tapis-Chauffant/refs/heads/master/release/version.json";
+const char* manifestURL = "https://raw.githubusercontent.com/djfab59/ESP32-C3-Tapis-Chauffant/refs/heads/master/release/";
 
 // Variables date
 int day = 30, month = 12, year = 2025;
@@ -503,7 +505,7 @@ String checkUpdate() {
   client.setInsecure();  // pas de vérification TLS
 
   HTTPClient https;
-  if (!https.begin(client, manifestURL)) {
+  if (!https.begin(client, String(manifestURL)+"version.json")) { 
     u8g2.drawStr(0, 64, "NO HTTP Access !!!");
     return "ERROR";
   }
@@ -524,9 +526,10 @@ String checkUpdate() {
       return "ERROR";
     }
 
+    //String stable = doc["stable"] | "";
     String latest   = doc["latest"]   | "";
-    String rollback = doc["rollback"] | "";
     String latestURL = doc["firmwares"][latest]["url"] | "";
+    latestmd5 = doc["firmwares"][latest]["md5"] | "";
 
     if (latest.length() == 0 || latestURL.length() == 0) {
       u8g2.drawStr(0, 64, "JSON Incomplete !!!");
@@ -536,6 +539,7 @@ String checkUpdate() {
     if (latest != currentVersion) {
       Serial.printf("Nouvelle version %s dispo, mise à jour...\n", latest.c_str());
       u8g2.drawStr(0, 64, "Update Needed");
+      latestVersion = latest;
       return "UPDATENEED";
     } else {
       Serial.println("Firmware déjà à jour.");
@@ -550,35 +554,40 @@ String checkUpdate() {
   }
 }
 
-// // Mise à jour
-// void upgrade(){
-//   if (latest != currentVersion) {
-//     Serial.printf("Nouvelle version %s dispo, mise à jour...\n", latest.c_str());
+// Mise à jour
+String upgrade(){
+  WiFiClientSecure client;
+  client.setInsecure();  // pas de vérification TLS
 
-//     t_httpUpdate_return ret = httpUpdate.update(client, latestURL);
-//     switch (ret) {
-//       case HTTP_UPDATE_FAILED:
-//         Serial.printf("Echec update: %s\n", httpUpdate.getLastErrorString().c_str());
-//         if (rollback.length()) {
-//           String rollbackURL = doc["firmwares"][rollback]["url"] | "";
-//           if (rollbackURL.length()) {
-//             Serial.println("Tentative rollback...");
-//             httpUpdate.update(client, rollbackURL);            }
-//           }
-//         break;
+  HTTPClient https;
+String URL= String(manifestURL) + "firmware-" + latestVersion + ".bin";
 
-//       case HTTP_UPDATE_NO_UPDATES:
-//         Serial.println("Pas de mise à jour.");
-//         break;
+  if (!https.begin(client, URL)) { 
+    u8g2.drawStr(0, 64, "NO HTTP Access !!!");
+    return "ERROR";
+  }
 
-//       case HTTP_UPDATE_OK:
-//         Serial.println("Update réussie !");
-//         break;
-//     }
-//   } else {
-//     Serial.println("Firmware déjà à jour.");
-//   }
-// }
+  httpUpdate.setMD5sum(latestmd5); // Pas dans cette version de lib Arduino-ESP32 ≥ 2.0.6
+  t_httpUpdate_return ret = httpUpdate.update(client, URL);  
+  switch (ret) {
+    case HTTP_UPDATE_FAILED:
+      Serial.printf("Echec update: %s\n", httpUpdate.getLastErrorString().c_str());
+      u8g2.drawStr(2, 64, "ERROR !!!");
+      return "ERROR";
+
+    case HTTP_UPDATE_NO_UPDATES:
+      Serial.println("Pas de mise à jour.");
+      u8g2.drawStr(2, 64, "No Update needed");
+      return "ERROR";
+
+    case HTTP_UPDATE_OK:
+      Serial.println("Update réussie !");
+      u8g2.drawStr(2, 64, "Upgrade Done!");
+      return "DONE";
+  }
+  https.end();
+  return "ERROR";
+}
 
 // Fonction affichage version
 void drawVersion() {
@@ -597,34 +606,55 @@ void drawVersion() {
     u8g2.setDrawColor(1);
 
     if (versionState == VersionCheck){
-      //u8g2.setDrawColor(0);
-      //u8g2.drawBox(0, 64, 128, 39);
-      //u8g2.setDrawColor(1);
       u8g2.drawStr(2, 51, "Wait ...");
       u8g2.sendBuffer();
       String result = checkUpdate();
-      u8g2.sendBuffer();
       if (result == "UPDATENEED"){
-        u8g2.setDrawColor(0);
+        versionState = VersionUpdate;
+        u8g2.setDrawColor(0);  //on efface les lignes d'avant
         u8g2.drawBox(0, 49, 128, 11);
         u8g2.setDrawColor(1);
-        u8g2.drawStr(2, 49, "Need Update");
-        versionState = VersionUpdate;
       } else {
         Serial.print("OTHER.");
         versionState = VersionMain;
         sleep(2);
       }
     }
+
     if (versionState == VersionUpdate){
-      u8g2.setDrawColor(0);
-      u8g2.drawBox(0, 39, 128, 25);
+      u8g2.drawStr(2, 38, "Found :");
+      u8g2.drawStr(2, 71, latestVersion.c_str());
       u8g2.setDrawColor(1);
       u8g2.drawBox(0, 39, 128, 13);
       u8g2.setDrawColor(0);
       u8g2.drawStr(2, 51, "Upgrade");
       u8g2.setDrawColor(1);
-    }    
+    }
+
+    if (versionState == VersionUpgrade){
+      Serial.print("Upgrade.");
+      u8g2.drawStr(2, 38, "Found :");
+      u8g2.drawStr(2, 71, latestVersion.c_str());
+      u8g2.setDrawColor(0);  // On efface le selecteur
+      u8g2.drawBox(0, 39, 128, 13);
+      u8g2.setDrawColor(1);
+      u8g2.drawStr(2, 51, "Upgrade");
+      u8g2.drawStr(2, 64, "Wait ...");
+      u8g2.sendBuffer();
+
+      String result = upgrade();
+
+      if (result == "error") {
+        Serial.print("OTHER.");
+        versionState = VersionMain;
+        sleep(2);
+      } else {
+        // TODO : mettre en memoire non volatile si bien upgrade la nouvelle version avant reboot
+        Serial.print("Upgrade done.");
+        u8g2.drawStr(2, 64, "Upgrade done.");
+        versionState = VersionMain; // TODO aller ou?
+      }
+    }
   }
 }
 
