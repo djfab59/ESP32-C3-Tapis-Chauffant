@@ -1181,3 +1181,40 @@ void loop() {
   u8g2.sendBuffer(); // envoie à l'écran
   //delay(2000);
 }
+
+// shasum -a 256 firmware.bin
+
+// #include <WiFiClientSecure.h>
+// #include <HTTPClient.h>
+// #include <HTTPUpdate.h>
+
+// String upgrade() {
+//   String url = String(manifestURL) + "firmware-" + latestVersion + ".bin";
+
+//   WiFiClientSecure client;
+//   client.setInsecure();  // pas de vérification TLS
+
+//   // Donne le SHA256 attendu (64 caractères hexadécimaux)
+//   Update.setSHA256(latestSHA256.c_str());
+
+//   t_httpUpdate_return ret = httpUpdate.update(client, url);
+
+//   switch (ret) {
+//     case HTTP_UPDATE_FAILED:
+//       Serial.printf("Echec update: %s\n", httpUpdate.getLastErrorString().c_str());
+//       u8g2.drawStr(2, 64, "ERROR !!!");
+//       return "ERROR";
+
+//     case HTTP_UPDATE_NO_UPDATES:
+//       Serial.println("Pas de mise à jour.");
+//       u8g2.drawStr(2, 64, "No Update needed");
+//       return "ERROR";
+
+//     case HTTP_UPDATE_OK:
+//       Serial.println("Update réussie !");
+//       u8g2.drawStr(2, 64, "Upgrade Done!");
+//       return "DONE";
+//   }
+
+//   return "ERROR";
+// }
