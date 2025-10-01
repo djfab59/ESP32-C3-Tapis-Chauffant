@@ -99,11 +99,10 @@ enum VersionSubState {
   VersionUpgrade
 };
 VersionSubState versionState = VersionMain;
-// cp .pio/build/seeed_xiao_esp32c3/firmware.bin release/firmware-0.2.bin && md5 .pio/build/seeed_xiao_esp32c3/firmware.map
-String updateVersion = "latest"; // latest or stable
+String updateVersion = "stable"; // latest or stable
 String latestVersion = "";
 String latestmd5 = "";
-const char* currentVersion = "0.1";
+String currentVersion = "0.1";
 const char* manifestURL = "https://raw.githubusercontent.com/djfab59/ESP32-C3-Tapis-Chauffant/refs/heads/master/release/";
 
 // Variables date
@@ -144,6 +143,8 @@ void setup() {
   progHourNight   = prefs.getInt("hourNight",   progHourNight);
   progMinuteNight = prefs.getInt("minNight",    progMinuteNight);
   progTempNight   = prefs.getFloat("tempNight", progTempNight);
+  updateVersion = prefs.getString("version", updateVersion);
+  currentVersion = prefs.getString("version", currentVersion);
   // Ferme les préférences
   prefs.end();
   prefs.begin("wifi", true);
@@ -566,6 +567,8 @@ String checkUpdate() {
   }
 }
 
+// Fonction pour télécharger et installer la mise à jour
+// cp .pio/build/seeed_xiao_esp32c3/firmware.bin release/firmware-0.2.bin && md5 .pio/build/seeed_xiao_esp32c3/firmware.map
 String upgrade() {
   String url = String(manifestURL) + "firmware-" + latestVersion + ".bin";
 
@@ -575,6 +578,9 @@ String upgrade() {
   HTTPClient https;
   https.useHTTP10(true); // aide à avoir un Content-Length
   if (!https.begin(client, url)) {
+    u8g2.setDrawColor(0);  //on efface les lignes d'avant
+    u8g2.drawBox(0, 53, 128, 11);
+    u8g2.setDrawColor(1);
     u8g2.drawStr(2, 64, "NO HTTP Access !!!");
     u8g2.sendBuffer();
     sleep(2);
@@ -584,6 +590,9 @@ String upgrade() {
   int code = https.GET();
   if (code != HTTP_CODE_OK) {
     https.end();
+    u8g2.setDrawColor(0);  //on efface les lignes d'avant
+    u8g2.drawBox(0, 53, 128, 11);
+    u8g2.setDrawColor(1);
     u8g2.drawStr(2, 64, "HTTP ERROR");
     u8g2.sendBuffer();
     sleep(2);
@@ -593,6 +602,9 @@ String upgrade() {
   int len = https.getSize();                // peut être -1 si chunked
   if (!Update.begin(len > 0 ? (size_t)len : UPDATE_SIZE_UNKNOWN)) {
     https.end();
+    u8g2.setDrawColor(0);  //on efface les lignes d'avant
+    u8g2.drawBox(0, 53, 128, 11);
+    u8g2.setDrawColor(1);
     u8g2.drawStr(2, 64, "No OTA Space");
     u8g2.sendBuffer();
     sleep(2);
@@ -603,6 +615,9 @@ String upgrade() {
   if (latestmd5.length() == 32 && !Update.setMD5(latestmd5.c_str())) {
     Update.abort();
     https.end();
+    u8g2.setDrawColor(0);  //on efface les lignes d'avant
+    u8g2.drawBox(0, 53, 128, 11);
+    u8g2.setDrawColor(1);
     u8g2.drawStr(2, 64, "MD5 BAD ARG");
     u8g2.sendBuffer();
     sleep(2);
@@ -615,6 +630,9 @@ String upgrade() {
   if (len > 0 && written != (size_t)len) {   // téléchargement incomplet
     Update.abort();
     https.end();
+    u8g2.setDrawColor(0);  //on efface les lignes d'avant
+    u8g2.drawBox(0, 53, 128, 11);
+    u8g2.setDrawColor(1);
     u8g2.drawStr(2, 64, "STREAM ERROR");
     u8g2.sendBuffer();
     sleep(2);
@@ -624,6 +642,9 @@ String upgrade() {
   if (!Update.end()) {                       // MD5 mauvais -> end() échoue
     https.end();
     Serial.printf("Update error: %s\n", Update.errorString());
+    u8g2.setDrawColor(0);  //on efface les lignes d'avant
+    u8g2.drawBox(0, 53, 128, 11);
+    u8g2.setDrawColor(1);
     u8g2.drawStr(2, 64, "VERIFY FAIL");
     u8g2.sendBuffer();
     sleep(2);
@@ -631,8 +652,15 @@ String upgrade() {
   }
 
   https.end();
+  u8g2.setDrawColor(0);  //on efface les lignes d'avant
+  u8g2.drawBox(0, 53, 128, 11);
+  u8g2.setDrawColor(1);
   u8g2.drawStr(2, 64, "Upgrade Done!");
   u8g2.sendBuffer();
+  // Sauvegarde dans les préférences
+  prefs.begin("config", false);
+  prefs.putString("version", latestVersion);
+  prefs.end();
   sleep(2);
   ESP.restart();                             // reboot si tout est ok
   return "DONE";
@@ -644,7 +672,7 @@ void drawVersion() {
   u8g2.setFont(u8g2_font_fub11_tr); // choisir police adaptée
   u8g2.drawStr(20, 11, "Firmware");
   u8g2.drawStr(2, 25, "Version:");
-  u8g2.drawStr(72, 25, currentVersion);
+  u8g2.drawStr(72, 25, currentVersion.c_str());
 
   if (WiFi.status() == WL_CONNECTED){
     if (versionState == VersionMain){
@@ -662,9 +690,6 @@ void drawVersion() {
       String result = checkUpdate();
       if (result == "UPDATENEED"){
         versionState = VersionUpdate;
-        //u8g2.setDrawColor(0);  //on efface les lignes d'avant
-        //u8g2.drawBox(0, 49, 128, 11);
-        //u8g2.setDrawColor(1);
       } else {
         Serial.print("OTHER.");
         versionState = VersionMain;
@@ -672,9 +697,6 @@ void drawVersion() {
     }
 
     if (versionState == VersionUpdate){
-      //u8g2.setDrawColor(0);  //on efface les lignes d'avant
-      //u8g2.drawBox(0, 49, 128, 11);
-      //u8g2.setDrawColor(1);
       u8g2.drawStr(2, 38, "Found :");
       u8g2.drawStr(63, 38, latestVersion.c_str());
       u8g2.setDrawColor(1);
@@ -687,7 +709,7 @@ void drawVersion() {
     if (versionState == VersionUpgrade){
       Serial.print("Upgrade.");
       u8g2.drawStr(2, 38, "Found :");
-      u8g2.drawStr(2, 71, latestVersion.c_str());
+      u8g2.drawStr(63, 38, latestVersion.c_str());
       u8g2.setDrawColor(0);  // On efface le selecteur
       u8g2.drawBox(0, 39, 128, 13);
       u8g2.setDrawColor(1);
@@ -705,7 +727,7 @@ void drawVersion() {
         // TODO : mettre en memoire non volatile si bien upgrade la nouvelle version avant reboot
         Serial.print("Upgrade done.");
         u8g2.drawStr(2, 64, "Upgrade done.");
-        versionState = VersionMain; // TODO aller ou?
+        versionState = VersionMain; // TODO aller ou? -> normalement reboot
       }
     }
   }
