@@ -99,6 +99,8 @@ enum VersionSubState {
   VersionUpgrade
 };
 VersionSubState versionState = VersionMain;
+// cp .pio/build/seeed_xiao_esp32c3/firmware.bin release/firmware-0.2.bin && md5 .pio/build/seeed_xiao_esp32c3/firmware.map
+String updateVersion = "latest"; // latest or stable
 String latestVersion = "";
 String latestmd5 = "";
 const char* currentVersion = "0.1";
@@ -523,33 +525,43 @@ String checkUpdate() {
     DeserializationError err = deserializeJson(doc, payload);
     if (err) {
       u8g2.drawStr(0, 64, "JSON Error !!!");
+      u8g2.sendBuffer();
+      sleep(2);
       return "ERROR";
     }
 
-    //String stable = doc["stable"] | "";
-    String latest   = doc["latest"]   | "";
+    //String latest   = doc["latest"]   | "";
+    String latest = doc[updateVersion] | "";
     String latestURL = doc["firmwares"][latest]["url"] | "";
     latestmd5 = doc["firmwares"][latest]["md5"] | "";
 
     if (latest.length() == 0 || latestURL.length() == 0) {
       u8g2.drawStr(0, 64, "JSON Incomplete !!!");
+      u8g2.sendBuffer();
+      sleep(2);
       return "ERROR";
     }
 
     if (latest != currentVersion) {
       Serial.printf("Nouvelle version %s dispo, mise à jour...\n", latest.c_str());
       u8g2.drawStr(0, 64, "Update Needed");
+      u8g2.sendBuffer();
+      sleep(2);
       latestVersion = latest;
       return "UPDATENEED";
     } else {
       Serial.println("Firmware déjà à jour.");
       u8g2.drawStr(0, 64, "Up to date");
+      u8g2.sendBuffer();
+      sleep(2);
       return "UPTODATE";
     }
   } else {
     Serial.printf("Erreur HTTP %d\n", httpCode);
     https.end();
     u8g2.drawStr(0, 64, "HTTP Error !!!");
+    u8g2.sendBuffer();
+    sleep(2); 
     return "ERROR";
   }
 }
@@ -558,66 +570,72 @@ String upgrade() {
   String url = String(manifestURL) + "firmware-" + latestVersion + ".bin";
 
   WiFiClientSecure client;
-  client.setInsecure();  // pas de vérification TLS
-
-  // Donne le SHA256 attendu (64 caractères hexadécimaux)
-  Update.setSHA256(latestSHA256.c_str());
-
-  t_httpUpdate_return ret = httpUpdate.update(client, url);
-
-  switch (ret) {
-    case HTTP_UPDATE_FAILED:
-      Serial.printf("Echec update: %s\n", httpUpdate.getLastErrorString().c_str());
-      u8g2.drawStr(2, 64, "ERROR !!!");
-      return "ERROR";
-
-    case HTTP_UPDATE_NO_UPDATES:
-      Serial.println("Pas de mise à jour.");
-      u8g2.drawStr(2, 64, "No Update needed");
-      return "ERROR";
-
-    case HTTP_UPDATE_OK:
-      Serial.println("Update réussie !");
-      u8g2.drawStr(2, 64, "Upgrade Done!");
-      return "DONE";
-  }
-
-  return "ERROR";
-}
-
-// Mise à jour
-String upgradeOLD(){
-  WiFiClientSecure client;
-  client.setInsecure();  // pas de vérification TLS
+  client.setInsecure();
 
   HTTPClient https;
-String URL= String(manifestURL) + "firmware-" + latestVersion + ".bin";
-
-  if (!https.begin(client, URL)) { 
-    u8g2.drawStr(0, 64, "NO HTTP Access !!!");
+  https.useHTTP10(true); // aide à avoir un Content-Length
+  if (!https.begin(client, url)) {
+    u8g2.drawStr(2, 64, "NO HTTP Access !!!");
+    u8g2.sendBuffer();
+    sleep(2);
     return "ERROR";
   }
 
-  httpUpdate.setMD5sum(latestmd5); // Pas dans cette version de lib Arduino-ESP32 ≥ 2.0.6
-  t_httpUpdate_return ret = httpUpdate.update(client, URL);  
-  switch (ret) {
-    case HTTP_UPDATE_FAILED:
-      Serial.printf("Echec update: %s\n", httpUpdate.getLastErrorString().c_str());
-      u8g2.drawStr(2, 64, "ERROR !!!");
-      return "ERROR";
-
-    case HTTP_UPDATE_NO_UPDATES:
-      Serial.println("Pas de mise à jour.");
-      u8g2.drawStr(2, 64, "No Update needed");
-      return "ERROR";
-
-    case HTTP_UPDATE_OK:
-      Serial.println("Update réussie !");
-      u8g2.drawStr(2, 64, "Upgrade Done!");
-      return "DONE";
+  int code = https.GET();
+  if (code != HTTP_CODE_OK) {
+    https.end();
+    u8g2.drawStr(2, 64, "HTTP ERROR");
+    u8g2.sendBuffer();
+    sleep(2);
+    return "ERROR";
   }
+
+  int len = https.getSize();                // peut être -1 si chunked
+  if (!Update.begin(len > 0 ? (size_t)len : UPDATE_SIZE_UNKNOWN)) {
+    https.end();
+    u8g2.drawStr(2, 64, "No OTA Space");
+    u8g2.sendBuffer();
+    sleep(2);
+    return "ERROR";
+  }
+
+  // >>> Vérif d’intégrité intégrée (MD5 attendu)
+  if (latestmd5.length() == 32 && !Update.setMD5(latestmd5.c_str())) {
+    Update.abort();
+    https.end();
+    u8g2.drawStr(2, 64, "MD5 BAD ARG");
+    u8g2.sendBuffer();
+    sleep(2);
+    return "ERROR";
+  }
+
+  WiFiClient *stream = https.getStreamPtr();
+  size_t written = Update.writeStream(*stream);
+
+  if (len > 0 && written != (size_t)len) {   // téléchargement incomplet
+    Update.abort();
+    https.end();
+    u8g2.drawStr(2, 64, "STREAM ERROR");
+    u8g2.sendBuffer();
+    sleep(2);
+    return "ERROR";
+  }
+
+  if (!Update.end()) {                       // MD5 mauvais -> end() échoue
+    https.end();
+    Serial.printf("Update error: %s\n", Update.errorString());
+    u8g2.drawStr(2, 64, "VERIFY FAIL");
+    u8g2.sendBuffer();
+    sleep(2);
+    return "ERROR";
+  }
+
   https.end();
-  return "ERROR";
+  u8g2.drawStr(2, 64, "Upgrade Done!");
+  u8g2.sendBuffer();
+  sleep(2);
+  ESP.restart();                             // reboot si tout est ok
+  return "DONE";
 }
 
 // Fonction affichage version
@@ -632,29 +650,33 @@ void drawVersion() {
     if (versionState == VersionMain){
       u8g2.drawBox(0, 26, 128, 13);
       u8g2.setDrawColor(0);
+      u8g2.drawStr(2, 38, "Check update");
+      u8g2.setDrawColor(1);
     }
-    u8g2.drawStr(2, 38, "Check update");
-    u8g2.setDrawColor(1);
 
     if (versionState == VersionCheck){
+      u8g2.drawStr(2, 38, "Check update");
+      u8g2.setDrawColor(1);
       u8g2.drawStr(2, 51, "Wait ...");
       u8g2.sendBuffer();
       String result = checkUpdate();
       if (result == "UPDATENEED"){
         versionState = VersionUpdate;
-        u8g2.setDrawColor(0);  //on efface les lignes d'avant
-        u8g2.drawBox(0, 49, 128, 11);
-        u8g2.setDrawColor(1);
+        //u8g2.setDrawColor(0);  //on efface les lignes d'avant
+        //u8g2.drawBox(0, 49, 128, 11);
+        //u8g2.setDrawColor(1);
       } else {
         Serial.print("OTHER.");
         versionState = VersionMain;
-        sleep(2);
       }
     }
 
     if (versionState == VersionUpdate){
+      //u8g2.setDrawColor(0);  //on efface les lignes d'avant
+      //u8g2.drawBox(0, 49, 128, 11);
+      //u8g2.setDrawColor(1);
       u8g2.drawStr(2, 38, "Found :");
-      u8g2.drawStr(2, 71, latestVersion.c_str());
+      u8g2.drawStr(63, 38, latestVersion.c_str());
       u8g2.setDrawColor(1);
       u8g2.drawBox(0, 39, 128, 13);
       u8g2.setDrawColor(0);
@@ -1212,5 +1234,3 @@ void loop() {
   u8g2.sendBuffer(); // envoie à l'écran
   //delay(2000);
 }
-
-// shasum -a 256 firmware.bin
