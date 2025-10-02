@@ -1199,7 +1199,7 @@ void loop() {
       String messageSw = stableVersion ? "switch to stable" : "switch to latest";
       u8g2.drawStr(0, 64, messageSw.c_str());
       u8g2.sendBuffer();
-      sleep(2);
+      sleep(1);
     }
   }
 
