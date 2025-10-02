@@ -1,13 +1,13 @@
 {
-  "latest": "0.3",
-  "stable": "0.2",
+  "latest": "0.2.1",
+  "stable": "0.2.0",
   "firmwares": {
-    "0.3": {
-      "url": "https://raw.githubusercontent.com/djfab59/ESP32-C3-Tapis-Chauffant/refs/heads/master/release/firmware-0.3.bin",
+    "0.2.1": {
+      "url": "https://raw.githubusercontent.com/djfab59/ESP32-C3-Tapis-Chauffant/refs/heads/master/release/firmware-0.2.1.bin",
       "md5": "f150d6927f62002b91948d467a4ce17a"
     },
-    "0.2": {
-      "url": "https://raw.githubusercontent.com/djfab59/ESP32-C3-Tapis-Chauffant/refs/heads/master/release/firmware-0.2.bin",
+    "0.2.0": {
+      "url": "https://raw.githubusercontent.com/djfab59/ESP32-C3-Tapis-Chauffant/refs/heads/master/release/firmware-0.2.0.bin",
       "md5": "f150d6927f62002b91948d467a4ce17a"
     }
   }
