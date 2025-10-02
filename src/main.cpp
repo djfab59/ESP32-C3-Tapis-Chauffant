@@ -143,7 +143,7 @@ void setup() {
   progHourNight   = prefs.getInt("hourNight",   progHourNight);
   progMinuteNight = prefs.getInt("minNight",    progMinuteNight);
   progTempNight   = prefs.getFloat("tempNight", progTempNight);
-  updateVersion = prefs.getString("version", updateVersion);
+  updateVersion = prefs.getString("uversion", updateVersion);
   currentVersion = prefs.getString("version", currentVersion);
   // Ferme les préférences
   prefs.end();
@@ -535,6 +535,11 @@ String checkUpdate() {
     String latest = doc[updateVersion] | "";
     String latestURL = doc["firmwares"][latest]["url"] | "";
     latestmd5 = doc["firmwares"][latest]["md5"] | "";
+
+    Serial.print("latest:");
+    Serial.println(latest);
+    Serial.print("latestURL:");
+    Serial.println(latestURL);
 
     if (latest.length() == 0 || latestURL.length() == 0) {
       u8g2.drawStr(0, 64, "JSON Incomplete !!!");
