@@ -99,7 +99,7 @@ enum VersionSubState {
   VersionUpgrade
 };
 VersionSubState versionState = VersionMain;
-String updateVersion = "stable"; // latest or stable
+bool stableVersion = true; // stable version or not
 String latestVersion = "";
 String latestmd5 = "";
 String currentVersion = "0.1";
@@ -143,7 +143,7 @@ void setup() {
   progHourNight   = prefs.getInt("hourNight",   progHourNight);
   progMinuteNight = prefs.getInt("minNight",    progMinuteNight);
   progTempNight   = prefs.getFloat("tempNight", progTempNight);
-  updateVersion = prefs.getString("uversion", updateVersion);
+  stableVersion = prefs.getBool("sversion", stableVersion);
   currentVersion = prefs.getString("version", currentVersion);
   // Ferme les préférences
   prefs.end();
@@ -519,9 +519,7 @@ String checkUpdate() {
     https.end();
 
     // --- Parsing JSON ---
-    //JsonDocument doc;
-    //doc.capacity(1024); 
-    StaticJsonDocument<1024> doc;
+    JsonDocument doc;
 
     DeserializationError err = deserializeJson(doc, payload);
     if (err) {
@@ -532,14 +530,14 @@ String checkUpdate() {
     }
 
     //String latest   = doc["latest"]   | "";
-    String latest = doc[updateVersion] | "";
+    String latest;
+    if (stableVersion) {
+      latest   = doc["stable"]   | "";
+    } else {
+      latest   = doc["latest"]   | "";
+    }
     String latestURL = doc["firmwares"][latest]["url"] | "";
     latestmd5 = doc["firmwares"][latest]["md5"] | "";
-
-    Serial.print("latest:");
-    Serial.println(latest);
-    Serial.print("latestURL:");
-    Serial.println(latestURL);
 
     if (latest.length() == 0 || latestURL.length() == 0) {
       u8g2.drawStr(0, 64, "JSON Incomplete !!!");
@@ -664,6 +662,7 @@ String upgrade() {
   u8g2.sendBuffer();
   // Sauvegarde dans les préférences
   prefs.begin("config", false);
+  prefs.putBool("sversion", stableVersion);
   prefs.putString("version", latestVersion);
   prefs.end();
   sleep(2);
@@ -729,10 +728,9 @@ void drawVersion() {
         versionState = VersionMain;
         sleep(2);
       } else {
-        // TODO : mettre en memoire non volatile si bien upgrade la nouvelle version avant reboot
         Serial.print("Upgrade done.");
         u8g2.drawStr(2, 64, "Upgrade done.");
-        versionState = VersionMain; // TODO aller ou? -> normalement reboot
+        versionState = VersionMain;
       }
     }
   }
@@ -1195,6 +1193,13 @@ void loop() {
     }
     if (btnDroite.fell() && versionState == VersionUpdate){
       versionState = VersionUpgrade;
+    }
+    if ((btnHaut.fell() || btnBas.fell()) && versionState == VersionMain){
+      stableVersion = !stableVersion;
+      String messageSw = stableVersion ? "switch to stable" : "switch to latest";
+      u8g2.drawStr(0, 64, messageSw.c_str());
+      u8g2.sendBuffer();
+      sleep(2);
     }
   }
 
